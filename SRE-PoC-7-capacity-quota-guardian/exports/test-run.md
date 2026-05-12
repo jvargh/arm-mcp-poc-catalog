@@ -126,7 +126,7 @@ On quota PASS the deploy is simulated (v1 is what-if only — no ARM deployment 
 WOULD DEPLOY (NOT EXECUTED — v1 what-if)
 =========================================
 Template:      <simulated>templates/myapp-vm-deployment.json</simulated>
-Subscriptions: [<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>]
+Subscriptions: [<simulated><SUBSCRIPTION_ID></simulated>]
 Mode:          Incremental
 Status:        NOT EXECUTED — v1 is what-if only.
                To enable live deploys, promote to v2 and remove the hard-rule guard.

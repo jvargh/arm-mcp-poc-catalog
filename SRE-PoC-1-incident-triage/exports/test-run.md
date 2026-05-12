@@ -12,7 +12,7 @@
 **Scope:** prod
 **Generated (UTC):** <simulated>2026-05-12T05:35:00Z</simulated>
 **Time window:** last 2h
-**Subscription:** <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>
+**Subscription:** <simulated><SUBSCRIPTION_ID></simulated>
 **Ruleset hash:** <simulated>a3f9c21b</simulated>
 
 ---
@@ -101,4 +101,4 @@ Audit record    : <simulated>exports/triage-audit-prod-20260512.jsonl</simulated
 > All values above are <simulated>simulated</simulated>. Live validation is
 > operator-driven in VS Code with the ARM MCP server attached and `az login`
 > completed against subscription
-> `<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>`.
+> `<simulated><SUBSCRIPTION_ID></simulated>`.

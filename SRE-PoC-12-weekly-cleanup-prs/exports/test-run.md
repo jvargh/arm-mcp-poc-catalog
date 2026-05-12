@@ -9,7 +9,7 @@
 ## Step 1 — Load configuration
 
 - Scope: **prod**
-- Subscriptions: `<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>`
+- Subscriptions: `<simulated><SUBSCRIPTION_ID></simulated>`
 - RG include: `<simulated>["payments-prod-rg", "checkout-prod-rg"]</simulated>`
 - `iac_repo_path`: `<simulated>C:/repos/my-infra</simulated>`
 - `orphan_threshold_days`: 30
@@ -30,7 +30,7 @@
 | R006 — Not in IaC template | ✅ OK | 1 |
 
 **R002 skip:** `STATUS=SKIPPED REASON=resourcechanges-unavailable` — the `resourcechanges` table
-was not found in subscription `<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>`.
+was not found in subscription `<simulated><SUBSCRIPTION_ID></simulated>`.
 Enable Azure Change Analysis to activate this rule.
 
 ---

@@ -11,7 +11,7 @@
 **Input:** `@auto-rollback watch deployment payments-deploy-20260512 scope prod`
 
 **Runbook values (simulated):**
-- `subscription_id`: <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>
+- `subscription_id`: <simulated><SUBSCRIPTION_ID></simulated>
 - `resource_group`: <simulated>payments-prod-rg</simulated>
 - `deployment_name`: <simulated>payments-deploy-20260512</simulated>
 - `last_good_template_ref`: <simulated>git:refs/heads/main:infra/main.json</simulated>
@@ -202,7 +202,7 @@ The following ARM deployment would be invoked if v1 restrictions were lifted (i.
 WOULD INVOKE: create_template_deployment
   deployment_name: <simulated>payments-lkg-rollback-20260512T064116Z</simulated>
   resource_group:  <simulated>payments-prod-rg</simulated>
-  subscription_id: <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>
+  subscription_id: <simulated><SUBSCRIPTION_ID></simulated>
   template:        <resolved from last_good_template_ref>
   parameters:      <simulated>infra/lkg.parameters.json</simulated>
   mode:            Complete

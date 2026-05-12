@@ -26,7 +26,7 @@ Resources
 
 Resources listed (first 25 of 1):
 
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-agentpool-73197682-nsg`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-agentpool-73197682-nsg`
 
 ### R004 — Public IPs assigned (potential exposure)
 
@@ -43,8 +43,8 @@ Resources
 
 Resources listed (first 25 of 2):
 
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/publicIPAddresses/bb8ad3d9-6bea-4d6d-aedd-f5340b3c7f07`
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/publicIPAddresses/kubernetes-a95a544970a56496b8148bc88ee07f99`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/publicIPAddresses/bb8ad3d9-6bea-4d6d-aedd-f5340b3c7f07`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/publicIPAddresses/kubernetes-a95a544970a56496b8148bc88ee07f99`
 
 ### R012 — Resources without owner / cost-center tags (operational hygiene)
 
@@ -61,18 +61,18 @@ Resources
 
 Resources listed (first 25 of 12):
 
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Compute/virtualMachineScaleSets/aks-syspool-27568677-vmss`
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Compute/virtualMachineScaleSets/aks-userpool-32075967-vmss`
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.ManagedIdentity/userAssignedIdentities/aks02day2-agentpool`
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/loadBalancers/kubernetes`
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-agentpool-73197682-nsg`
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-appgateway-73197682-nsg`
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-virtualkubelet-73197682-nsg`
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-vnet-73197682-aks-appgateway-nsg-eastus2`
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-vnet-73197682-aks-virtualkubelet-nsg-eastus2`
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/publicIPAddresses/bb8ad3d9-6bea-4d6d-aedd-f5340b3c7f07`
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/publicIPAddresses/kubernetes-a95a544970a56496b8148bc88ee07f99`
-- `/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/virtualNetworks/aks-vnet-73197682`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Compute/virtualMachineScaleSets/aks-syspool-27568677-vmss`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Compute/virtualMachineScaleSets/aks-userpool-32075967-vmss`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.ManagedIdentity/userAssignedIdentities/aks02day2-agentpool`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/loadBalancers/kubernetes`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-agentpool-73197682-nsg`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-appgateway-73197682-nsg`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-virtualkubelet-73197682-nsg`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-vnet-73197682-aks-appgateway-nsg-eastus2`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-vnet-73197682-aks-virtualkubelet-nsg-eastus2`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/publicIPAddresses/bb8ad3d9-6bea-4d6d-aedd-f5340b3c7f07`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/publicIPAddresses/kubernetes-a95a544970a56496b8148bc88ee07f99`
+- `/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/virtualNetworks/aks-vnet-73197682`
 
 ## Notes
 

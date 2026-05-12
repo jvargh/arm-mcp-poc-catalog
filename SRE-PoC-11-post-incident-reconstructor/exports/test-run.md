@@ -11,7 +11,7 @@
 
 **Scope:** prod  
 **Incident scope:** <simulated>payments-prod-rg</simulated>  
-**Subscription:** <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>
+**Subscription:** <simulated><SUBSCRIPTION_ID></simulated>
 
 ### Rules executed
 

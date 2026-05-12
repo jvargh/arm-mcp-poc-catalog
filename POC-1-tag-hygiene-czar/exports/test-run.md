@@ -11,7 +11,7 @@
 | Field | Value |
 |---|---|
 | Scope | `prod` |
-| Subscriptions | `<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>` |
+| Subscriptions | `<simulated><SUBSCRIPTION_ID></simulated>` |
 | Required tags | `CostCenter`, `DataClassification`, `Owner`, `Environment` |
 | RG include filter | `payments-prod-rg`, `checkout-prod-rg` |
 | RG exclude filter | _(none)_ |
@@ -57,12 +57,12 @@
 
 | Resource Group | Resource Type | Resource Name | Resource ID | Missing Tag |
 |---|---|---|---|---|
-| <simulated>checkout-prod-rg</simulated> | microsoft.compute/virtualmachines | <simulated>vm-checkout-01</simulated> | <simulated>/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/checkout-prod-rg/providers/Microsoft.Compute/virtualMachines/vm-checkout-01</simulated> | CostCenter |
-| <simulated>checkout-prod-rg</simulated> | microsoft.compute/virtualmachines | <simulated>vm-checkout-01</simulated> | <simulated>/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/checkout-prod-rg/providers/Microsoft.Compute/virtualMachines/vm-checkout-01</simulated> | DataClassification |
-| <simulated>checkout-prod-rg</simulated> | microsoft.storage/storageaccounts | <simulated>stcheckout001</simulated> | <simulated>/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/checkout-prod-rg/providers/Microsoft.Storage/storageAccounts/stcheckout001</simulated> | Owner |
-| <simulated>payments-prod-rg</simulated> | microsoft.keyvault/vaults | <simulated>kv-payments-prod</simulated> | <simulated>/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/payments-prod-rg/providers/Microsoft.KeyVault/vaults/kv-payments-prod</simulated> | CostCenter |
-| <simulated>payments-prod-rg</simulated> | microsoft.keyvault/vaults | <simulated>kv-payments-prod</simulated> | <simulated>/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/payments-prod-rg/providers/Microsoft.KeyVault/vaults/kv-payments-prod</simulated> | Environment |
-| <simulated>payments-prod-rg</simulated> | microsoft.web/sites | <simulated>app-payments-api</simulated> | <simulated>/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/payments-prod-rg/providers/Microsoft.Web/sites/app-payments-api</simulated> | DataClassification |
+| <simulated>checkout-prod-rg</simulated> | microsoft.compute/virtualmachines | <simulated>vm-checkout-01</simulated> | <simulated>/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/checkout-prod-rg/providers/Microsoft.Compute/virtualMachines/vm-checkout-01</simulated> | CostCenter |
+| <simulated>checkout-prod-rg</simulated> | microsoft.compute/virtualmachines | <simulated>vm-checkout-01</simulated> | <simulated>/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/checkout-prod-rg/providers/Microsoft.Compute/virtualMachines/vm-checkout-01</simulated> | DataClassification |
+| <simulated>checkout-prod-rg</simulated> | microsoft.storage/storageaccounts | <simulated>stcheckout001</simulated> | <simulated>/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/checkout-prod-rg/providers/Microsoft.Storage/storageAccounts/stcheckout001</simulated> | Owner |
+| <simulated>payments-prod-rg</simulated> | microsoft.keyvault/vaults | <simulated>kv-payments-prod</simulated> | <simulated>/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/payments-prod-rg/providers/Microsoft.KeyVault/vaults/kv-payments-prod</simulated> | CostCenter |
+| <simulated>payments-prod-rg</simulated> | microsoft.keyvault/vaults | <simulated>kv-payments-prod</simulated> | <simulated>/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/payments-prod-rg/providers/Microsoft.KeyVault/vaults/kv-payments-prod</simulated> | Environment |
+| <simulated>payments-prod-rg</simulated> | microsoft.web/sites | <simulated>app-payments-api</simulated> | <simulated>/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/payments-prod-rg/providers/Microsoft.Web/sites/app-payments-api</simulated> | DataClassification |
 
 ### Failing Checks
 
@@ -108,7 +108,7 @@ Parameters:
 ```json
 {
   "targetResourceId": {
-    "value": "<simulated>/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/payments-prod-rg/providers/Microsoft.KeyVault/vaults/kv-payments-prod</simulated>"
+    "value": "<simulated>/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/payments-prod-rg/providers/Microsoft.KeyVault/vaults/kv-payments-prod</simulated>"
   },
   "tagName": {
     "value": "CostCenter"

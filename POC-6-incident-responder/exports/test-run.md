@@ -17,7 +17,7 @@
 ## Step 1 — Configuration loaded
 
 - scope: `prod`
-- subscriptions: `["<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>"]`
+- subscriptions: `["<simulated><SUBSCRIPTION_ID></simulated>"]`
 - rg_include: `["payments-prod-rg", "checkout-prod-rg"]`
 - rg_exclude: `[]`
 - default_time_window_hours: `2`
@@ -49,8 +49,8 @@ Continuing with R002.
 
 | Deployment ID | Name | Resource Group | Subscription | Start Time | State |
 |---|---|---|---|---|---|
-| <simulated>/subscriptions/463a82d4-.../deployments/deploy-payments-v2</simulated> | <simulated>deploy-payments-v2</simulated> | <simulated>payments-prod-rg</simulated> | <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated> | <simulated>2026-05-12T05:10:00Z</simulated> | Running |
-| <simulated>/subscriptions/463a82d4-.../deployments/deploy-checkout-hotfix</simulated> | <simulated>deploy-checkout-hotfix</simulated> | <simulated>checkout-prod-rg</simulated> | <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated> | <simulated>2026-05-12T05:22:00Z</simulated> | Running |
+| <simulated>/subscriptions/463a82d4-.../deployments/deploy-payments-v2</simulated> | <simulated>deploy-payments-v2</simulated> | <simulated>payments-prod-rg</simulated> | <simulated><SUBSCRIPTION_ID></simulated> | <simulated>2026-05-12T05:10:00Z</simulated> | Running |
+| <simulated>/subscriptions/463a82d4-.../deployments/deploy-checkout-hotfix</simulated> | <simulated>deploy-checkout-hotfix</simulated> | <simulated>checkout-prod-rg</simulated> | <simulated><SUBSCRIPTION_ID></simulated> | <simulated>2026-05-12T05:22:00Z</simulated> | Running |
 
 `get_arm_template_deployment_status` called for both deployments (Step 3).
 
@@ -145,7 +145,7 @@ The agent presents:
 Deployment ID : <simulated>/subscriptions/463a82d4-.../deployments/deploy-checkout-hotfix</simulated>
 Deployment name: <simulated>deploy-checkout-hotfix</simulated>
 Resource group : <simulated>checkout-prod-rg</simulated>
-Subscription   : <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>
+Subscription   : <simulated><SUBSCRIPTION_ID></simulated>
 Current state  : Running
 Started at     : <simulated>2026-05-12T05:22:00Z</simulated>
 
@@ -177,7 +177,7 @@ Type "yes" or "y" to confirm cancellation. Any other input aborts.
 | Deployment ID | <simulated>/subscriptions/463a82d4-.../deployments/deploy-checkout-hotfix</simulated> |
 | Deployment name | <simulated>deploy-checkout-hotfix</simulated> |
 | Resource group | <simulated>checkout-prod-rg</simulated> |
-| Subscription | <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated> |
+| Subscription | <simulated><SUBSCRIPTION_ID></simulated> |
 | Cancel result | <simulated>Succeeded</simulated> |
 
 > Audit line appended to `exports/incident-audit.jsonl`.

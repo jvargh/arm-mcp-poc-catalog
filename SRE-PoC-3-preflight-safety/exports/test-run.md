@@ -11,7 +11,7 @@
 | Field | Value |
 |---|---|
 | Scope | `prod` |
-| Subscriptions | `["<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>"]` |
+| Subscriptions | `["<simulated><SUBSCRIPTION_ID></simulated>"]` |
 | RG include | `["<simulated>payments-prod-rg</simulated>", "<simulated>checkout-prod-rg</simulated>"]` |
 | RG exclude | `[]` |
 | Rules active | R001, R002, R003, R004, R005, R006, R007, R008, R009 |

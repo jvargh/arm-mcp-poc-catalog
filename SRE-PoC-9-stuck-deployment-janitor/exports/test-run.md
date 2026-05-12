@@ -27,10 +27,10 @@
 
 | Rank | Name | Resource Group | Subscription | Duration (h) | Classification | Detail | Over Expected |
 |---:|---|---|---|---:|---|---|:---:|
-| 1 | <simulated>payments-infra-20260511</simulated> | <simulated>payments-prod-rg</simulated> | <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated> | <simulated>27</simulated> | `deleted-dependency` | <simulated>["payments-keyvault-legacy"]</simulated> | ✅ |
-| 2 | <simulated>checkout-scale-20260511</simulated> | <simulated>checkout-prod-rg</simulated> | <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated> | <simulated>18</simulated> | `quota-loop` | <simulated>QuotaExceeded</simulated> | ✅ |
-| 3 | <simulated>analytics-warehouse-20260510</simulated> | <simulated>analytics-rg</simulated> | <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated> | <simulated>41</simulated> | `genuinely-slow` | <simulated>["microsoft.synapse/workspaces","microsoft.documentdb/databaseaccounts"]</simulated> | ❌ |
-| 4 | <simulated>notifications-svc-20260512</simulated> | <simulated>notifications-rg</simulated> | <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated> | <simulated>5</simulated> | `exceeded-threshold` | | ❌ |
+| 1 | <simulated>payments-infra-20260511</simulated> | <simulated>payments-prod-rg</simulated> | <simulated><SUBSCRIPTION_ID></simulated> | <simulated>27</simulated> | `deleted-dependency` | <simulated>["payments-keyvault-legacy"]</simulated> | ✅ |
+| 2 | <simulated>checkout-scale-20260511</simulated> | <simulated>checkout-prod-rg</simulated> | <simulated><SUBSCRIPTION_ID></simulated> | <simulated>18</simulated> | `quota-loop` | <simulated>QuotaExceeded</simulated> | ✅ |
+| 3 | <simulated>analytics-warehouse-20260510</simulated> | <simulated>analytics-rg</simulated> | <simulated><SUBSCRIPTION_ID></simulated> | <simulated>41</simulated> | `genuinely-slow` | <simulated>["microsoft.synapse/workspaces","microsoft.documentdb/databaseaccounts"]</simulated> | ❌ |
+| 4 | <simulated>notifications-svc-20260512</simulated> | <simulated>notifications-rg</simulated> | <simulated><SUBSCRIPTION_ID></simulated> | <simulated>5</simulated> | `exceeded-threshold` | | ❌ |
 
 ## Classification Key
 
@@ -76,7 +76,7 @@ You are about to **cancel** an ARM template deployment. This action is **irrever
 |---|---|
 | **Deployment name** | <simulated>payments-infra-20260511</simulated> |
 | **Resource group** | <simulated>payments-prod-rg</simulated> |
-| **Subscription** | <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated> |
+| **Subscription** | <simulated><SUBSCRIPTION_ID></simulated> |
 | **Running for** | <simulated>27</simulated> hours |
 | **Classification** | `deleted-dependency` |
 | **Detail** | <simulated>["payments-keyvault-legacy"]</simulated> |
@@ -94,7 +94,7 @@ You are about to **cancel** an ARM template deployment. This action is **irrever
 **Agent calls `cancel_arm_template_deployment` with:**
 ```json
 {
-  "resourceId": "/subscriptions/<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>/resourceGroups/<simulated>payments-prod-rg</simulated>/providers/Microsoft.Resources/deployments/<simulated>payments-infra-20260511</simulated>"
+  "resourceId": "/subscriptions/<simulated><SUBSCRIPTION_ID></simulated>/resourceGroups/<simulated>payments-prod-rg</simulated>/providers/Microsoft.Resources/deployments/<simulated>payments-infra-20260511</simulated>"
 }
 ```
 
@@ -102,7 +102,7 @@ You are about to **cancel** an ARM template deployment. This action is **irrever
 
 **Audit log line emitted:**
 ```
-[AUDIT] CANCEL attempt — deployment: payments-infra-20260511 rg: payments-prod-rg sub: 463a82d4-1896-4332-aeeb-618ee5a5aa93 duration: 27h classification: deleted-dependency outcome: CONFIRMED utc: 2026-05-12T05:36:14Z
+[AUDIT] CANCEL attempt — deployment: payments-infra-20260511 rg: payments-prod-rg sub: <SUBSCRIPTION_ID> duration: 27h classification: deleted-dependency outcome: CONFIRMED utc: 2026-05-12T05:36:14Z
 ```
 
 ---

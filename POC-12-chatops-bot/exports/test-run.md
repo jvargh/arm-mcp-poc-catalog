@@ -208,7 +208,7 @@ ResourceContainers
 
 | id | resourceGroup | subscriptionId | subscriptionName | resource_count |
 |---|---|---|---|---:|
-| <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93 | N/A | <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93 | <simulated>Production | <simulated>118 |
+| <simulated><SUBSCRIPTION_ID> | N/A | <simulated><SUBSCRIPTION_ID> | <simulated>Production | <simulated>118 |
 | <simulated>7b2c14fa-3301-4455-bbee-229905facdef | N/A | <simulated>7b2c14fa-3301-4455-bbee-229905facdef | <simulated>Staging | <simulated>42 |
 
 **Row count:** <simulated>2

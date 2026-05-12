@@ -51,7 +51,7 @@ Backed by the [Azure Resource Manager MCP Server](https://aka.ms/JoinARMMCP).
 | R003 | `authorizationresources` | Emit `STATUS=SKIPPED REASON=authorizationresources-unavailable`; continue |
 
 Live validation will discover whether these tables are enabled in subscription
-`463a82d4-1896-4332-aeeb-618ee5a5aa93` (ratification #1, #2).
+`<SUBSCRIPTION_ID>` (ratification #1, #2).
 
 ## How it works (end-to-end flow)
 

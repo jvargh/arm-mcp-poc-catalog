@@ -47,7 +47,7 @@
 ```
 
 **Loaded runbook:** `runbooks/prod.yaml`  
-**Subscription:** <simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>  
+**Subscription:** <simulated><SUBSCRIPTION_ID></simulated>  
 **Resource group:** <simulated>arm-poc-rg</simulated>  
 **max_retries:** 3  
 **ruleset_hash8:** <simulated>a3f9c1d7</simulated>
@@ -60,10 +60,10 @@
 
 ```
 [Attempt 1/3] Simulating deployment of broken-vnet.json to arm-poc-rg
-              in subscription 463a82d4-1896-4332-aeeb-618ee5a5aa93
+              in subscription <SUBSCRIPTION_ID>
 
 Would call: create_template_deployment(
-  subscriptionId: "<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>",
+  subscriptionId: "<simulated><SUBSCRIPTION_ID></simulated>",
   resourceGroupName: "<simulated>arm-poc-rg</simulated>",
   deploymentName: "fix-20260512-attempt-1",
   mode: "Incremental",
@@ -417,7 +417,7 @@ if the `apply` verb were activated in a future v2 release.
 ```
 # Attempt 1 (would have failed — shown for reference)
 create_template_deployment(
-  subscriptionId: "463a82d4-1896-4332-aeeb-618ee5a5aa93",
+  subscriptionId: "<SUBSCRIPTION_ID>",
   resourceGroupName: "arm-poc-rg",
   deploymentName: "fix-20260512-attempt-1",
   mode: "Incremental",
@@ -426,7 +426,7 @@ create_template_deployment(
 
 # Attempt 2 (would have failed — shown for reference)
 create_template_deployment(
-  subscriptionId: "463a82d4-1896-4332-aeeb-618ee5a5aa93",
+  subscriptionId: "<SUBSCRIPTION_ID>",
   resourceGroupName: "arm-poc-rg",
   deploymentName: "fix-20260512-attempt-2",
   mode: "Incremental",
@@ -435,7 +435,7 @@ create_template_deployment(
 
 # Attempt 3 (would have succeeded — shown for reference)
 create_template_deployment(
-  subscriptionId: "463a82d4-1896-4332-aeeb-618ee5a5aa93",
+  subscriptionId: "<SUBSCRIPTION_ID>",
   resourceGroupName: "arm-poc-rg",
   deploymentName: "fix-20260512-attempt-3",
   mode: "Incremental",

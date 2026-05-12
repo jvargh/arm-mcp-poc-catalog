@@ -11,7 +11,7 @@
 ```
 [INFO]  Loading runbooks/prod.yaml + prod.values.yaml
 [INFO]  template_path = <simulated>infra/azuredeploy.json</simulated>
-[INFO]  subscriptions = ["<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>"]
+[INFO]  subscriptions = ["<simulated><SUBSCRIPTION_ID></simulated>"]
 [INFO]  risk_threshold = 30
 [INFO]  Parsed rules.yaml — 6 rules, ruleset_hash8 = <simulated>a3f7c2d1</simulated>
 [INFO]  Parsing ARM template: <simulated>7 resources found</simulated>

@@ -40,7 +40,7 @@ Check `exports/prod-run-state.json` — does not exist. Initialize fresh run.
 ```json
 {
   "query": "Resources | where type =~ 'microsoft.compute/virtualmachines' | where location =~ 'eastus' | where tostring(properties.provisioningState) !~ 'Succeeded' | project id, name, resourceGroup, subscriptionId, location, provisioningState=tostring(properties.provisioningState)",
-  "subscriptions": ["<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>"]
+  "subscriptions": ["<simulated><SUBSCRIPTION_ID></simulated>"]
 }
 ```
 
@@ -54,10 +54,10 @@ Check `exports/prod-run-state.json` — does not exist. Initialize fresh run.
 {
   "rows": [
     {
-      "id": "/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/payments-prod-rg/providers/Microsoft.Compute/virtualMachines/payments-vm-01",
+      "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/payments-prod-rg/providers/Microsoft.Compute/virtualMachines/payments-vm-01",
       "name": "payments-vm-01",
       "resourceGroup": "payments-prod-rg",
-      "subscriptionId": "463a82d4-1896-4332-aeeb-618ee5a5aa93",
+      "subscriptionId": "<SUBSCRIPTION_ID>",
       "location": "eastus",
       "provisioningState": "Failed"
     }
@@ -117,7 +117,7 @@ FAIL → on_fail: continue (incident confirmed; proceeding to failover capacity 
 ```json
 {
   "query": "Resources | where type =~ 'microsoft.compute/virtualmachines' | where location =~ 'westus2' | where tostring(properties.provisioningState) =~ 'Succeeded' | project id, name, resourceGroup, subscriptionId, location",
-  "subscriptions": ["<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>"]
+  "subscriptions": ["<simulated><SUBSCRIPTION_ID></simulated>"]
 }
 ```
 
@@ -381,7 +381,7 @@ Continuing with step 4: Check post-deploy health — failover region serving tra
 ```json
 {
   "query": "Resources | where type =~ 'microsoft.network/trafficmanagerprofiles' | where name =~ 'my-tm-profile' | mv-expand endpoint = properties.endpoints | where tostring(endpoint.name) =~ 'failover-ep' | where tostring(endpoint.properties.endpointStatus) =~ 'Enabled' | project id, name, resourceGroup, subscriptionId, endpointName=tostring(endpoint.name)",
-  "subscriptions": ["<simulated>463a82d4-1896-4332-aeeb-618ee5a5aa93</simulated>"]
+  "subscriptions": ["<simulated><SUBSCRIPTION_ID></simulated>"]
 }
 ```
 

@@ -97,7 +97,7 @@ know **which subscriptions**, **which time window**, and **which resource groups
 
 2. **Edit `runbooks/prod.values.yaml`** and fill in real values:
    ```yaml
-   subscription_id: "463a82d4-1896-4332-aeeb-618ee5a5aa93"
+   subscription_id: "<SUBSCRIPTION_ID>"
    incident_start_utc: "2026-05-10T14:00:00Z"
    incident_end_utc:   "2026-05-10T15:30:00Z"
    incident_scope: "resourceGroup"
