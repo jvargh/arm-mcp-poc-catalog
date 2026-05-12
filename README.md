@@ -17,7 +17,6 @@ The ARM MCP Server is a **remote MCP server** at `https://mcp.management.azure.c
 
 All operations honor the signed-in user's RBAC and Azure Policy assignments.
 
-*   **Install / join the preview:** \<https://aka.ms/JoinARMMCP\>
 *   **Announcement blog:** \<https://techcommunity.microsoft.com/blog/azuregovernanceandmanagementblog/introducing-the-azure-resource-manager-mcp-server/4517521\>
 *   **Source repo & docs:** \<https://github.com/Azure/Azure-Resource-Manager-MCP\>
 
