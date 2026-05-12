@@ -10,3 +10,18 @@
 # Local runbook values (real subscription IDs / RG names).
 # Commit only the *.yaml templates and *.yaml.example sibling.
 **/runbooks/*.values.yaml
+
+# Local-only tooling and orchestration state — not for the public repo.
+# Anchor to repo root with leading slash so per-PoC `.github/copilot/`
+# folders (which hold each PoC's agent + skill) are still tracked.
+/.copilot/
+/.github/
+/.squad/
+/FLEET-BUILD-PROMPT.md
+/FLEET-BUILD-REPORT.md
+
+# Don't publish git config files to the remote repo.
+# (If these are already tracked, run once:
+#   git rm --cached .gitignore .gitattributes)
+/.gitignore
+/.gitattributes
