@@ -1,0 +1,74 @@
+# SLO Deployment Gate — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, skip_if_unavailable, use_generate, kql.
+# Rules are evaluated in file order. Tags used: slo_service (maps service name to resource).
+# kql MUST return columns: id, name, resourceGroup, subscriptionId, service_tag (where applicable).
+
+version: 1
+
+rules:
+  - id: R001
+    title: Resolve service to App Insights component by tag
+    severity: info
+    skip_if_unavailable: false
+    use_generate: false
+    description: >
+      Finds the App Insights component (or Log Analytics workspace) whose tag
+      `slo_service` matches the target service name. This gives us the workspace
+      resource ID needed for budget lookup. If no component is found, the gate
+      cannot evaluate SLO budget and emits BLOCK (fail-closed).
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.insights/components',
+          'microsoft.operationalinsights/workspaces'
+        )
+      | where tags['slo_service'] =~ '${service}'
+      | project id, name, resourceGroup, subscriptionId, location,
+                workspace_id = tostring(properties.customerId),
+                service_tag  = tostring(tags['slo_service'])
+
+  - id: R002
+    title: Check error budget status via workspace metadata (properties)
+    severity: high
+    skip_if_unavailable: true
+    use_generate: false
+    description: >
+      Reads workspace-level properties that may carry last-known SLO state
+      (e.g. a tag `slo_budget_pct` set by an external budget exporter).
+      If the tag/property is absent, emits STATUS=OUT_OF_SCOPE
+      REASON=arg-cannot-read-metrics and records the workspace resource ID
+      for manual operator lookup. In v1 the budget value is sourced from
+      the runbook `slo_targets` block instead.
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.insights/components',
+          'microsoft.operationalinsights/workspaces'
+        )
+      | where tags['slo_service'] =~ '${service}'
+      | project id, name, resourceGroup, subscriptionId,
+                service_tag      = tostring(tags['slo_service']),
+                budget_tag_pct   = tostring(tags['slo_budget_pct']),
+                workspace_resource_id = id
+
+  - id: R003
+    title: Validate no active incidents on target service (resource health)
+    severity: high
+    skip_if_unavailable: true
+    use_generate: false
+    description: >
+      Queries ResourceHealth (via resourceHealthResources) to detect any
+      currently Unavailable or Degraded status on resources tagged with
+      slo_service == target service. An active incident is additional
+      evidence that deploying now is unsafe. Gate emits a warning row;
+      if `block_on_active_incident: true` in runbook, decision is BLOCK
+      regardless of budget.
+    kql: |
+      resourceHealthResources
+      | where properties.availabilityState in~ ('Unavailable', 'Degraded')
+      | where tags['slo_service'] =~ '${service}'
+      | project id, name, resourceGroup, subscriptionId,
+                availability_state = tostring(properties.availabilityState),
+                occurred_time      = tostring(properties.occurredTime),
+                service_tag        = tostring(tags['slo_service'])

@@ -1,0 +1,34 @@
+# Scope definition for the `prod` tag-hygiene-czar run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# Resource group inclusion / exclusion (case-insensitive substrings, applied after the query).
+# Acts as an allow-list: only RGs matching one of these names are scored.
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}
+
+# Required tag keys. Must match the tag_key fields in rules/rules.yaml.
+# Any tag listed here that has no corresponding rule in rules.yaml will emit
+# STATUS=NO_RULE_DEFINED and be skipped.
+required_tags: ${required_tags}
+
+# Default values applied to missing tags during the `apply` verb.
+# Keys must match entries in required_tags.
+# These values are written to resources by the ARM patch template.
+default_tag_values: ${default_tag_values}
+
+# Freeze flag — set to true to block all deployments (apply verb will abort).
+# Toggle in prod.values.yaml during change-freeze windows.
+freeze_active: false
+
+# List of ISO 8601 time windows during which deployments are blocked.
+# Currently informational only — freeze_active is the enforced gate.
+freeze_windows: []

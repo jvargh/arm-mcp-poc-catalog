@@ -1,0 +1,23 @@
+# Scope definition for the `prod` chatops-bot run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific values.
+# Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml into this file.
+# See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to query. Empty list = all subscriptions the user can read.
+subscriptions: ["${subscription_id}"]
+
+# read_only_mode MUST be true for chatops-bot.
+# Setting this to false will cause the skill to abort.
+read_only_mode: true
+
+# Path to the append-only audit log (one JSON line per query).
+# The path is relative to the workspace root.
+audit_log_path: ${audit_log_path}
+
+# Allowed pre-canned question categories (rule IDs from rules.yaml).
+# Questions matching a category not in this list will be blocked.
+allowed_question_categories: ${allowed_question_categories}

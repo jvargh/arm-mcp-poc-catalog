@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "nsgName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Network Security Group to patch back to IaC desired state."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region of the NSG."
+      }
+    },
+    "securityRules": {
+      "type": "array",
+      "metadata": {
+        "description": "Array of security rule objects representing the IaC desired state. Replaces the live NSG rule set."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-09-01",
+      "name": "[parameters('nsgName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": "[parameters('securityRules')]"
+      }
+    }
+  ]
+}

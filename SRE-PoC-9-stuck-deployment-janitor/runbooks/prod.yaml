@@ -1,0 +1,47 @@
+# Scope definition for the `prod` stuck-deployment-janitor run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# Resource group inclusion / exclusion (case-insensitive substrings, applied post-query).
+# Empty rg_include = include all resource groups in the subscription.
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}
+
+# Deployments running longer than this number of hours are flagged as stuck (R001).
+# Also used as the cancel-threshold marker in the report.
+auto_cancel_threshold_hours: 4
+
+# Per-resource-type expected provisioning duration (hours). Deployments referencing
+# these types are compared against these thresholds to set the over_expected flag.
+# Operators should tune these values based on observed provisioning times.
+expected_duration_by_type:
+  "microsoft.compute/virtualmachines": 1
+  "microsoft.containerservice/managedclusters": 2
+  "microsoft.documentdb/databaseaccounts": 6
+  "microsoft.dbformysql/flexibleservers": 3
+  "microsoft.dbforpostgresql/flexibleservers": 3
+  "microsoft.recoveryservices/vaults": 8
+  "microsoft.sql/managedinstances": 12
+  "microsoft.hdinsight/clusters": 4
+  "microsoft.synapse/workspaces": 4
+  "microsoft.web/sites": 1
+
+# Resource types that are known to take hours to provision legitimately.
+# Deployments containing these types are classified as 'genuinely-slow' by R004
+# and should NOT be cancelled without careful human review.
+known_slow_types:
+  - "microsoft.documentdb/databaseaccounts"
+  - "microsoft.dbformysql/flexibleservers"
+  - "microsoft.dbforpostgresql/flexibleservers"
+  - "microsoft.recoveryservices/vaults"
+  - "microsoft.sql/managedinstances"
+  - "microsoft.hdinsight/clusters"
+  - "microsoft.synapse/workspaces"

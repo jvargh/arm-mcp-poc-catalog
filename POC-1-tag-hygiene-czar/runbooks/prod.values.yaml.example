@@ -1,0 +1,26 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+
+rg_include:
+  - "<rg-name-1>"
+  - "<rg-name-2>"
+
+rg_exclude: []
+
+# Required tag keys to check. Must match the tag_key fields in rules/rules.yaml.
+required_tags:
+  - CostCenter
+  - DataClassification
+  - Owner
+  - Environment
+
+# Default values written to resources when the `apply` verb patches missing tags.
+# Customise these to match your organisation's taxonomy.
+default_tag_values:
+  CostCenter: "UNKNOWN"
+  DataClassification: "Internal"
+  Owner: "platform-team@example.com"
+  Environment: "prod"

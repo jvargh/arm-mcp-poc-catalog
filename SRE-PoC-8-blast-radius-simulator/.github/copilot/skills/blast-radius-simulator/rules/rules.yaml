@@ -1,0 +1,84 @@
+# Blast-Radius Simulator — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, category, weight, skip_if_unavailable, kql.
+# category maps to a key in runbook risk_score_weights.
+# kql MUST return columns: id, name, resourceGroup, subscriptionId, type, location.
+# affected_resource_count is the row count returned by execute_query.
+
+version: 1
+
+rules:
+  - id: R001
+    title: DNS / endpoint impact — Front Door, App Gateway, App Service custom domains
+    severity: critical
+    category: dns_endpoint
+    weight: 15
+    skip_if_unavailable: false
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.network/frontdoors',
+          'microsoft.cdn/profiles',
+          'microsoft.network/applicationgateways',
+          'microsoft.web/sites'
+        )
+      | project id, name, resourceGroup, subscriptionId, type, location
+
+  - id: R002
+    title: Identity rotation impact — user-assigned managed identities referenced by other resources
+    severity: high
+    category: identity_rotation
+    weight: 10
+    skip_if_unavailable: false
+    kql: |
+      Resources
+      | where type =~ 'microsoft.managedidentity/userassignedidentities'
+      | project id, name, resourceGroup, subscriptionId, type, location
+
+  - id: R003
+    title: Cert regen impact — Key Vaults and services consuming Key Vault certificates
+    severity: high
+    category: cert_regen
+    weight: 12
+    skip_if_unavailable: false
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.keyvault/vaults',
+          'microsoft.web/certificates',
+          'microsoft.network/applicationgateways'
+        )
+      | project id, name, resourceGroup, subscriptionId, type, location
+
+  - id: R004
+    title: RBAC impact — role assignments in scope (authorizationresources)
+    severity: medium
+    category: rbac
+    weight: 9
+    skip_if_unavailable: true
+    kql: |
+      AuthorizationResources
+      | where type =~ 'microsoft.authorization/roleassignments'
+      | project id,
+               name         = tostring(properties.principalId),
+               resourceGroup,
+               subscriptionId,
+               type,
+               location     = 'global'
+
+  - id: R005
+    title: Dependency edge mapping — shared VNet, NSG, and private DNS dependencies
+    severity: medium
+    category: dependency_edge
+    weight: 8
+    skip_if_unavailable: false
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.network/virtualnetworks',
+          'microsoft.network/networksecuritygroups',
+          'microsoft.network/routetables',
+          'microsoft.network/privatednszones',
+          'microsoft.network/privateendpoints'
+        )
+      | project id, name, resourceGroup, subscriptionId, type, location

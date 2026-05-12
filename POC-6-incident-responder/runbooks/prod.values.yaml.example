@@ -1,0 +1,14 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+
+rg_include:
+  - "<rg-name-1>"
+  - "<rg-name-2>"
+
+rg_exclude: []
+
+incident_scopes:
+  - "<incident-scope-1>"

@@ -1,0 +1,170 @@
+# Reliability Posture Scorecard — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, weight, category, kql, remediation_template.
+# weight is subtracted from a workload's 100-point baseline when at least one resource fails.
+# kql MUST return a column named `resourceGroup` (used as default workload_key) and `id`.
+
+version: 1
+
+rules:
+  - id: R001
+    title: VMs not deployed across availability zones
+    severity: high
+    weight: 12
+    category: zone-redundancy
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.compute/virtualmachines'
+      | where isnull(zones) or array_length(zones) == 0
+      | project id, name, resourceGroup, subscriptionId, location
+
+  - id: R002
+    title: Storage accounts on LRS (no zone or geo redundancy)
+    severity: high
+    weight: 10
+    category: zone-redundancy
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.storage/storageaccounts'
+      | where sku.name in~ ('Standard_LRS','Premium_LRS')
+      | project id, name, resourceGroup, subscriptionId, location, sku=sku.name
+
+  - id: R003
+    title: Resources missing diagnostic settings
+    severity: medium
+    weight: 8
+    category: observability
+    remediation_template: enable-diagnostic-settings.json
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.web/sites',
+          'microsoft.keyvault/vaults',
+          'microsoft.storage/storageaccounts',
+          'microsoft.sql/servers/databases',
+          'microsoft.containerservice/managedclusters'
+        )
+      | extend rid = tolower(id)
+      | join kind=leftouter (
+          Resources
+          | where type =~ 'microsoft.insights/diagnosticsettings'
+          | extend parent = tolower(tostring(properties.scopedResourceId))
+          | summarize ds_count = count() by parent
+        ) on $left.rid == $right.parent
+      | where isnull(ds_count) or ds_count == 0
+      | project id, name, resourceGroup, subscriptionId, location, type
+
+  - id: R004
+    title: Public IPs assigned (potential exposure)
+    severity: medium
+    weight: 6
+    category: exposure
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.network/publicipaddresses'
+      | where isnotempty(tostring(properties.ipAddress))
+      | project id, name, resourceGroup, subscriptionId, location, ip=tostring(properties.ipAddress)
+
+  - id: R005
+    title: App Service plans running a single instance on paid tier
+    severity: high
+    weight: 11
+    category: single-instance
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.web/serverfarms'
+      | where toint(sku.capacity) <= 1
+      | where sku.tier !in~ ('Free','Shared')
+      | project id, name, resourceGroup, subscriptionId, location, tier=sku.tier, capacity=toint(sku.capacity)
+
+  - id: R006
+    title: Key Vaults without soft delete enabled
+    severity: high
+    weight: 10
+    category: data-protection
+    remediation_template: enable-keyvault-soft-delete.json
+    kql: |
+      Resources
+      | where type =~ 'microsoft.keyvault/vaults'
+      | where tobool(properties.enableSoftDelete) != true
+      | project id, name, resourceGroup, subscriptionId, location
+
+  - id: R007
+    title: Key Vaults without purge protection
+    severity: medium
+    weight: 7
+    category: data-protection
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.keyvault/vaults'
+      | where tobool(properties.enablePurgeProtection) != true
+      | project id, name, resourceGroup, subscriptionId, location
+
+  - id: R008
+    title: SQL databases not configured for geo-redundant backup
+    severity: high
+    weight: 9
+    category: backup
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.sql/servers/databases'
+      | where tostring(properties.requestedBackupStorageRedundancy) !in~ ('Geo','GeoZone')
+      | project id, name, resourceGroup, subscriptionId, location, redundancy=tostring(properties.requestedBackupStorageRedundancy)
+
+  - id: R009
+    title: AKS node pools without availability zones
+    severity: high
+    weight: 11
+    category: zone-redundancy
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.containerservice/managedclusters'
+      | mv-expand pool = properties.agentPoolProfiles
+      | where isnull(pool.availabilityZones) or array_length(pool.availabilityZones) == 0
+      | project id, name=tostring(name), resourceGroup, subscriptionId, location, pool=tostring(pool.name)
+
+  - id: R010
+    title: NSG rules allowing inbound from Internet/Any
+    severity: critical
+    weight: 14
+    category: exposure
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.network/networksecuritygroups'
+      | mv-expand rule = properties.securityRules
+      | where tostring(rule.properties.direction) =~ 'Inbound'
+            and tostring(rule.properties.access) =~ 'Allow'
+            and tostring(rule.properties.sourceAddressPrefix) in ('*','0.0.0.0/0','Internet')
+      | project id, name, resourceGroup, subscriptionId, location, ruleName=tostring(rule.name)
+
+  - id: R011
+    title: Storage accounts allowing public blob access
+    severity: high
+    weight: 10
+    category: exposure
+    remediation_template: storage-disable-public-blob.json
+    kql: |
+      Resources
+      | where type =~ 'microsoft.storage/storageaccounts'
+      | where tobool(properties.allowBlobPublicAccess) == true
+      | project id, name, resourceGroup, subscriptionId, location
+
+  - id: R012
+    title: Resources without owner / cost-center tags (operational hygiene)
+    severity: low
+    weight: 4
+    category: hygiene
+    remediation_template: null
+    kql: |
+      Resources
+      | where type !startswith 'microsoft.insights/'
+      | where isnull(tags.Owner) or isnull(tags.CostCenter)
+      | project id, name, resourceGroup, subscriptionId, location, type

@@ -1,0 +1,68 @@
+# Golden Path Provisioner — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, weight, category, kql, remediation_template.
+# These rules are evaluated post-deploy (or pre-deploy as a guard check).
+# kql MUST return columns: id, name, resourceGroup, subscriptionId, location, type.
+#
+# IMPORTANT: The <subscriptions> token in each kql is substituted at runtime
+# from the runbook's subscriptions[] list. No other substitution is performed.
+# NEITHER generate_query NOR validate_query is used — execute_query only.
+
+version: 1
+
+rules:
+  - id: R001
+    title: Resources not following golden-path naming convention
+    severity: high
+    weight: 15
+    category: naming-compliance
+    remediation_template: null
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.containerservice/managedclusters',
+          'microsoft.containerregistry/registries',
+          'microsoft.keyvault/vaults',
+          'microsoft.operationalinsights/workspaces',
+          'microsoft.web/sites',
+          'microsoft.sql/servers',
+          'microsoft.storage/storageaccounts',
+          'microsoft.datafactory/factories'
+        )
+      | where name !matches regex @'^[a-z][a-z0-9]+-[a-z][a-z0-9]+-[a-z]+-[a-z]+'
+      | project id, name, resourceGroup, subscriptionId, location, type
+
+  - id: R002
+    title: Golden-path resources missing required tags (Team, Environment, ManagedBy)
+    severity: high
+    weight: 12
+    category: tag-compliance
+    remediation_template: null
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.containerservice/managedclusters',
+          'microsoft.containerregistry/registries',
+          'microsoft.keyvault/vaults',
+          'microsoft.operationalinsights/workspaces',
+          'microsoft.web/sites',
+          'microsoft.sql/servers',
+          'microsoft.storage/storageaccounts',
+          'microsoft.datafactory/factories'
+        )
+      | where isnull(tags.Team) or tags.Team == ''
+           or isnull(tags.Environment) or tags.Environment == ''
+           or isnull(tags.ManagedBy) or tags.ManagedBy == ''
+      | project id, name, resourceGroup, subscriptionId, location, type
+
+  - id: R003
+    title: Public IP addresses exposed on golden-path resources (unless template allows)
+    severity: critical
+    weight: 20
+    category: exposure
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.network/publicipaddresses'
+      | where isnotempty(tostring(properties.ipAddress))
+      | project id, name, resourceGroup, subscriptionId, location, type=type, ipAddress=tostring(properties.ipAddress)

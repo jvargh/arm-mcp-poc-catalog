@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vmName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Virtual Machine to resize."
+      }
+    },
+    "targetSku": {
+      "type": "string",
+      "metadata": {
+        "description": "Target VM size (e.g. Standard_D4s_v5). Must be available in the VM's region."
+      }
+    },
+    "resourceGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource group containing the VM. Must match the deployment scope."
+      }
+    }
+  },
+  "variables": {
+    "vmApiVersion": "2023-03-01"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "[variables('vmApiVersion')]",
+      "name": "[parameters('vmName')]",
+      "location": "[reference(resourceId(parameters('resourceGroupName'), 'Microsoft.Compute/virtualMachines', parameters('vmName')), variables('vmApiVersion'), 'Full').location]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('targetSku')]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "vmId": {
+      "type": "string",
+      "value": "[resourceId(parameters('resourceGroupName'), 'Microsoft.Compute/virtualMachines', parameters('vmName'))]"
+    },
+    "newVmSize": {
+      "type": "string",
+      "value": "[parameters('targetSku')]"
+    }
+  }
+}

@@ -1,0 +1,68 @@
+# Tag Hygiene Czar — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, weight, category, tag_key, kql, remediation_template.
+# weight determines report sort priority and remediation ordering.
+# kql MUST return columns: id, name, resourceGroup, subscriptionId, type, location.
+# tag_key is the Azure tag name this rule checks. Must match the key tested in the kql.
+# remediation_template points to the ARM JSON under remediation/ used by the apply verb.
+#
+# Configurable required-tag set: the runbook's `required_tags` list drives which of these
+# rules are active. If a tag appears in `required_tags` but has no corresponding rule here,
+# the skill emits STATUS=NO_RULE_DEFINED for that tag and continues.
+# To add a new required tag, add both a rule entry here AND the tag name to `required_tags`
+# in your runbook values file.
+
+version: 1
+
+rules:
+  - id: R001
+    title: Resources missing CostCenter tag
+    severity: high
+    weight: 10
+    category: tag-hygiene
+    tag_key: CostCenter
+    remediation_template: apply-missing-tags.json
+    kql: |
+      Resources
+      | where type !startswith 'microsoft.resources/'
+      | where isnull(tags['CostCenter']) or tostring(tags['CostCenter']) == ''
+      | project id, name, resourceGroup, subscriptionId, type, location
+
+  - id: R002
+    title: Resources missing DataClassification tag
+    severity: high
+    weight: 10
+    category: tag-hygiene
+    tag_key: DataClassification
+    remediation_template: apply-missing-tags.json
+    kql: |
+      Resources
+      | where type !startswith 'microsoft.resources/'
+      | where isnull(tags['DataClassification']) or tostring(tags['DataClassification']) == ''
+      | project id, name, resourceGroup, subscriptionId, type, location
+
+  - id: R003
+    title: Resources missing Owner tag
+    severity: medium
+    weight: 8
+    category: tag-hygiene
+    tag_key: Owner
+    remediation_template: apply-missing-tags.json
+    kql: |
+      Resources
+      | where type !startswith 'microsoft.resources/'
+      | where isnull(tags['Owner']) or tostring(tags['Owner']) == ''
+      | project id, name, resourceGroup, subscriptionId, type, location
+
+  - id: R004
+    title: Resources missing Environment tag
+    severity: medium
+    weight: 6
+    category: tag-hygiene
+    tag_key: Environment
+    remediation_template: apply-missing-tags.json
+    kql: |
+      Resources
+      | where type !startswith 'microsoft.resources/'
+      | where isnull(tags['Environment']) or tostring(tags['Environment']) == ''
+      | project id, name, resourceGroup, subscriptionId, type, location

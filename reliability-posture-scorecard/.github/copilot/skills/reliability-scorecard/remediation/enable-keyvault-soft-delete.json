@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vaultName":      { "type": "string" },
+    "location":       { "type": "string" },
+    "tenantId":       { "type": "string", "defaultValue": "[subscription().tenantId]" },
+    "skuName":        { "type": "string", "defaultValue": "standard" },
+    "enablePurgeProtection": { "type": "bool", "defaultValue": true }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2023-07-01",
+      "name": "[parameters('vaultName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "tenantId": "[parameters('tenantId')]",
+        "sku": { "family": "A", "name": "[parameters('skuName')]" },
+        "enableSoftDelete": true,
+        "softDeleteRetentionInDays": 90,
+        "enablePurgeProtection": "[parameters('enablePurgeProtection')]",
+        "enableRbacAuthorization": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+# ARM Template Fixer — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+#
+# SCHEMA DEVIATION: This PoC does NOT use ARG / KQL.
+# Each rule uses `error_code:` (the ARM error code to match) and `fix_pattern:`
+# (the deterministic action to take) INSTEAD of the `kql:` field present in other
+# fleet PoC rule packs. The outer structure (version, rules: []) is identical.
+#
+# Fix attempt order (per SKILL.md Step 4 and agent hard rule #5):
+#   1. R001 MissingDependency → add dependsOn
+#   2. R002 InvalidSku        → suggest valid SKU
+#   3. R003 QuotaExceeded     → suggest smaller SKU/region
+#   4. R004 Conflict          → switch to incremental
+# R005 is a pre-check guard only; it is never applied as an edit.
+
+version: 1
+
+rules:
+  - id: R001
+    title: Missing resource dependency
+    severity: high
+    category: dependency
+    error_code: MissingDependency
+    # ARM also surfaces this as InvalidTemplateDeployment with inner code ResourceNotFound
+    # when a resource references another that hasn't been provisioned yet.
+    error_code_aliases:
+      - ResourceNotFound
+      - LinkedResourceNotFound
+    fix_pattern: add dependsOn
+    fix_description: >
+      Locate the resource whose `dependsOn` array is missing the dependency that triggered
+      the error. Add a `dependsOn` entry of the form "[resourceId('<type>', '<name>')]"
+      pointing to the unprovisioned dependency. Re-order resources in the template so the
+      dependency appears before the dependent resource.
+    destructive: false
+
+  - id: R002
+    title: Invalid or disallowed SKU
+    severity: medium
+    category: sku
+    error_code: InvalidSku
+    error_code_aliases:
+      - RequestDisallowedByPolicy
+      - SkuNotAvailable
+    fix_pattern: suggest valid SKU
+    fix_description: >
+      Replace the offending `sku.name` (or `sku.tier`) with the first entry in `valid_skus`
+      that is available in the target region. Log the old and new SKU values in the diff.
+    valid_skus:
+      - Standard_D2s_v5
+      - Standard_D2s_v4
+      - Standard_B2s
+      - Standard_F2s_v2
+    destructive: false
+
+  - id: R003
+    title: Quota exceeded
+    severity: high
+    category: quota
+    error_code: QuotaExceeded
+    error_code_aliases:
+      - OperationNotAllowed
+      - CoreQuotaExceeded
+    fix_pattern: suggest smaller SKU/region
+    fix_description: >
+      If a smaller SKU is available, downgrade to the first entry in `fallback_skus`.
+      Otherwise, change the resource `location` to the first entry in `fallback_regions`.
+      If both options apply, prefer the SKU downgrade and log the choice.
+    fallback_skus:
+      - Standard_B1s
+      - Standard_A1_v2
+    fallback_regions:
+      - eastus2
+      - westus2
+      - northeurope
+    destructive: false
+
+  - id: R004
+    title: Resource conflict or already exists
+    severity: medium
+    category: conflict
+    error_code: Conflict
+    error_code_aliases:
+      - ResourceAlreadyExists
+      - ResourceGroupAlreadyExists
+      - DeploymentAlreadyExists
+    fix_pattern: switch to incremental
+    fix_description: >
+      Set `"mode": "Incremental"` in the template's `properties.mode` field (deployment
+      properties). If the deployment mode is already `Incremental` and the conflict persists,
+      append `-v2` to the conflicting resource's `name` field so a new resource is created
+      alongside the existing one.
+    destructive: false
+
+  - id: R005
+    title: Halt-on-destructive-change guard
+    severity: critical
+    category: safety
+    # R005 is a PRE-CHECK guard, not an applied fix.
+    # It fires when the proposed fix template would delete or replace a resource
+    # whose type appears in runbooks/prod.yaml → destructive_change_types.
+    # The agent must HALT and NOT deploy if this guard triggers.
+    error_code: N/A
+    fix_pattern: HALT
+    fix_description: >
+      Before each redeploy attempt, scan the current template diff. If any resource type
+      from `destructive_change_types` would be removed or fully replaced, emit
+      STATUS=HALTED REASON=destructive-change-detected and stop the loop.
+    destructive: true

@@ -1,0 +1,22 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+
+rg_include:
+  - "<rg-name-1>"
+  - "<rg-name-2>"
+
+rg_exclude: []
+
+# Path to the ARM template JSON file to compare against live state.
+# Relative to the workspace root.
+template_repo_path: "infra/main.json"
+
+# ARM resource types to include in the drift check (case-insensitive).
+resource_types_to_check:
+  - "microsoft.network/networksecuritygroups"
+  - "microsoft.compute/virtualmachines"
+  - "microsoft.storage/storageaccounts"
+  - "microsoft.keyvault/vaults"

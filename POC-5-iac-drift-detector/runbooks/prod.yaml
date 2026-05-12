@@ -1,0 +1,34 @@
+# Scope definition for the `prod` IaC drift detector run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# Workload grouping key. Default groups findings by Azure resource group.
+workload_key: resourceGroup
+
+# Resource group inclusion / exclusion (case-insensitive substrings, applied after the query).
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}
+
+# PoC-specific keys below this line
+
+# Path to the ARM template file to compare against live state.
+# Relative to the workspace root (where this runbook lives).
+template_repo_path: ${template_repo_path}
+
+# List of ARM resource types to include in the drift check.
+# Only resources whose `type` (case-insensitive) appears here will be evaluated.
+# Example:
+#   resource_types_to_check:
+#     - "microsoft.network/networksecuritygroups"
+#     - "microsoft.compute/virtualmachines"
+#     - "microsoft.storage/storageaccounts"
+#     - "microsoft.keyvault/vaults"
+resource_types_to_check: ${resource_types_to_check}

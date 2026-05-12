@@ -1,0 +1,105 @@
+# Crown Jewels Security — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, weight, category, remediation_template, kql.
+# weight is ADDED to a resource's severity score when the resource matches the rule.
+# skip_if_unavailable: true — if execute_query returns empty or errors with
+#   table-not-found, emit STATUS=SKIPPED REASON=authorizationresources-unavailable
+#   and continue (do not abort).
+# kql MUST return columns named `id` and `resourceGroup` at minimum.
+
+version: 1
+
+rules:
+  - id: R001
+    title: Internet-exposed resources with managed identities
+    severity: critical
+    weight: 15
+    category: identity-exposure
+    remediation_template: null
+    kql: |
+      Resources
+      | where isnotempty(identity)
+      | where tostring(identity.type) in~ ('SystemAssigned','UserAssigned','SystemAssigned, UserAssigned')
+      | extend resourceIdLower = tolower(id)
+      | join kind=inner (
+          Resources
+          | where type =~ 'microsoft.network/publicipaddresses'
+          | where isnotempty(tostring(properties.ipAddress))
+          | extend linkedId = tolower(tostring(properties.ipConfiguration.id))
+          | extend linkedResourceId = tostring(split(linkedId, '/ipconfigurations/')[0])
+          | summarize ipCount = count() by linkedResourceId
+        ) on $left.resourceIdLower == $right.linkedResourceId
+      | project id, name, resourceGroup, subscriptionId, location,
+                identityType=tostring(identity.type)
+
+  - id: R002
+    title: Resources with Owner or Contributor role assignments
+    severity: high
+    weight: 12
+    category: broad-rbac
+    skip_if_unavailable: true
+    remediation_template: null
+    kql: |
+      authorizationresources
+      | where type =~ 'microsoft.authorization/roleassignments'
+      | extend roleDefId = tolower(tostring(properties.roleDefinitionId))
+      | where roleDefId endswith '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
+           or roleDefId endswith 'b24988ac-6180-42a0-ab88-20f7382dd24c'
+      | extend scope = tostring(properties.scope)
+      | extend resourceGroup = iff(scope contains '/resourceGroups/',
+                                   tostring(split(split(scope, '/resourceGroups/')[1], '/')[0]),
+                                   '')
+      | project id, resourceGroup, subscriptionId,
+                principalId=tostring(properties.principalId),
+                roleDefinitionId=tostring(properties.roleDefinitionId),
+                scope
+
+  - id: R003
+    title: Key Vaults with broad network access (Allow from All Networks)
+    severity: high
+    weight: 10
+    category: key-vault-exposure
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.keyvault/vaults'
+      | where tostring(properties.networkAcls.defaultAction) =~ 'Allow'
+           or isnull(properties.networkAcls)
+      | project id, name, resourceGroup, subscriptionId, location,
+                defaultAction=tostring(properties.networkAcls.defaultAction)
+
+  - id: R004
+    title: Public-facing resources with assigned public IP addresses
+    severity: medium
+    weight: 8
+    category: public-exposure
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.network/publicipaddresses'
+      | where isnotempty(tostring(properties.ipAddress))
+      | project id, name, resourceGroup, subscriptionId, location,
+                ipAddress=tostring(properties.ipAddress),
+                allocationMethod=tostring(properties.publicIPAllocationMethod)
+
+  - id: R005
+    title: Resources with multiple high-privilege role assignments
+    severity: critical
+    weight: 14
+    category: broad-rbac
+    skip_if_unavailable: true
+    remediation_template: null
+    kql: |
+      authorizationresources
+      | where type =~ 'microsoft.authorization/roleassignments'
+      | extend roleDefId = tolower(tostring(properties.roleDefinitionId))
+      | where roleDefId endswith '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
+           or roleDefId endswith 'b24988ac-6180-42a0-ab88-20f7382dd24c'
+           or roleDefId endswith '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9'
+      | extend scope = tostring(properties.scope)
+      | where scope contains '/resourceGroups/'
+      | extend resourceGroup = tostring(split(split(scope, '/resourceGroups/')[1], '/')[0])
+      | summarize roleCount = count() by scope, resourceGroup, subscriptionId
+      | where roleCount >= 2
+      | extend id = scope
+      | project id, resourceGroup, subscriptionId, roleCount

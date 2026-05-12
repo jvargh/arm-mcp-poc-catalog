@@ -1,0 +1,21 @@
+# Scope definition for the `prod` triage run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Target subscription. Required. Passed as the subscriptionId filter in all
+# three rules (R001, R002, R003).
+subscription_id: "${subscription_id}"
+
+# Default look-back window in hours for R001 (resource changes) and R003
+# (RBAC changes). Override at prompt time if needed.
+default_time_window_hours: 2
+
+# Named triage scopes — friendly aliases for resource-group prefixes or tags.
+# The skill uses these to post-filter ARG results to the affected blast radius.
+# Empty list = all resource groups in the subscription.
+triage_scopes: ${triage_scopes}

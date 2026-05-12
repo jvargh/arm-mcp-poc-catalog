@@ -1,0 +1,20 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+
+rg_include:
+  - "<rg-name-1>"
+  - "<rg-name-2>"
+
+rg_exclude: []
+
+# Number of days to look back for newly created / modified resources.
+time_window_days: 30
+
+# Azure region to filter (e.g. eastus2, westus2, northeurope).
+target_region: "eastus2"
+
+# Optional: USD threshold for future Azure Cost Management handoff. Remove or set to null to disable.
+cost_threshold_usd: null

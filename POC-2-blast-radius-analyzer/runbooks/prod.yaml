@@ -1,0 +1,26 @@
+# Scope definition for the `prod` blast-radius-analyzer run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# Path to the ARM template JSON file to analyze.
+# Supports relative paths (from the workspace root) or absolute paths.
+template_path: "${template_path}"
+
+# Risk score threshold. If total_risk_score >= risk_threshold, report status = EXCEEDED.
+risk_threshold: ${risk_threshold}
+
+# Workload grouping key. Default groups findings by Azure resource group.
+workload_key: resourceGroup
+
+# Resource group inclusion / exclusion (case-insensitive substrings, applied after the query).
+# Acts as an allow-list: only RGs matching one of these names are scored.
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}

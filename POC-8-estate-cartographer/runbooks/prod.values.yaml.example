@@ -1,0 +1,20 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+# Optional: management group ID. If set, subscriptions are discovered dynamically.
+# Leave as empty string "" to use the explicit subscriptions list below.
+management_group: ""
+
+# List of subscription GUIDs to include. Used when management_group is empty.
+subscriptions:
+  - "<your-subscription-guid-here>"
+
+# Maximum number of subscriptions to process in a single run (paging safety cap).
+# Increase for very large tenants. Default: 10.
+max_subscriptions: 10
+
+# Maximum number of Mermaid diagram nodes to render before capping.
+# VS Code Mermaid preview handles ~300 nodes before becoming slow.
+# Default: 200.
+mermaid_max_nodes: 200

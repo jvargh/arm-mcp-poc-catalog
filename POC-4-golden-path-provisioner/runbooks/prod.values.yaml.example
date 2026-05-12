@@ -1,0 +1,22 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+
+# Short prefix used in every generated resource name.
+# Example: "gp" → names like "gp-platform-eastus2-aks"
+naming_prefix: "gp"
+
+# Default environment tag applied to all resources.
+environment: "prod"
+
+# Cost center tag for billing chargeback.
+cost_center: "<your-cost-center-code>"
+
+# Azure regions allowed for deployments. Deployments to other regions are aborted.
+allowed_regions:
+  - "eastus2"
+  - "westus2"
+  - "westeurope"
+  - "northeurope"

@@ -1,0 +1,119 @@
+# Weekly Cleanup + Drift Detection — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Rules: id, title, severity, category, skip_if_unavailable, kql, remediation_template.
+# category: orphaned | drift | compliance
+# kql MUST return columns: id, name, resourceGroup, subscriptionId (used for scope filtering).
+# estimated_savings_resource_type: "use_map" = look up savings_rate_map in runbook by resource type;
+#   null = no direct savings estimate (operational benefit only).
+
+version: 1
+
+rules:
+  - id: R001
+    title: "Orphaned resources: no owner or cost-center tags"
+    severity: medium
+    category: orphaned
+    estimated_savings_resource_type: use_map
+    skip_if_unavailable: false
+    remediation_template: cleanup-orphaned-resources.json
+    kql: |
+      Resources
+      | where type !startswith 'microsoft.resources/'
+      | where type !startswith 'microsoft.authorization/'
+      | where isnull(tags.Owner) or isnull(tags.CostCenter)
+      | project id, name, resourceGroup, subscriptionId, location, type
+
+  - id: R002
+    title: "Orphaned resources: no recent activity (30+ days)"
+    severity: high
+    category: orphaned
+    estimated_savings_resource_type: use_map
+    skip_if_unavailable: true
+    skip_reason: resourcechanges-unavailable
+    remediation_template: cleanup-orphaned-resources.json
+    kql: |
+      resourcechanges
+      | where timestamp >= ago(30d)
+      | extend rid = tolower(resourceId)
+      | summarize last_change = max(timestamp) by rid
+      | join kind=rightouter (
+          Resources
+          | where type !startswith 'microsoft.resources/'
+          | where type !startswith 'microsoft.authorization/'
+          | extend rid = tolower(id)
+          | project rid, name, resourceGroup, subscriptionId, type, location
+        ) on rid
+      | where isnull(last_change)
+      | project id=rid, name, resourceGroup, subscriptionId, type, location
+
+  - id: R003
+    title: "NSG drift vs IaC source"
+    severity: medium
+    category: drift
+    estimated_savings_resource_type: null
+    skip_if_unavailable: false
+    remediation_template: fix-nsg-drift.json
+    kql: |
+      Resources
+      | where type =~ 'microsoft.network/networksecuritygroups'
+      | mv-expand rule = properties.securityRules
+      | project id, name, resourceGroup, subscriptionId, location,
+          ruleName=tostring(rule.name),
+          direction=tostring(rule.properties.direction),
+          access=tostring(rule.properties.access),
+          sourcePrefix=tostring(rule.properties.sourceAddressPrefix),
+          destinationPortRange=tostring(rule.properties.destinationPortRange),
+          priority=toint(rule.properties.priority)
+
+  - id: R004
+    title: "Missing diagnostic settings"
+    severity: medium
+    category: compliance
+    estimated_savings_resource_type: null
+    skip_if_unavailable: false
+    remediation_template: enable-diagnostic-settings.json
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.web/sites',
+          'microsoft.keyvault/vaults',
+          'microsoft.storage/storageaccounts',
+          'microsoft.sql/servers/databases',
+          'microsoft.containerservice/managedclusters'
+        )
+      | extend rid = tolower(id)
+      | join kind=leftouter (
+          Resources
+          | where type =~ 'microsoft.insights/diagnosticsettings'
+          | extend parent = tolower(tostring(properties.scopedResourceId))
+          | summarize ds_count = count() by parent
+        ) on $left.rid == $right.parent
+      | where isnull(ds_count) or ds_count == 0
+      | project id, name, resourceGroup, subscriptionId, location, type
+
+  - id: R005
+    title: "Storage accounts with public blob access enabled"
+    severity: high
+    category: compliance
+    estimated_savings_resource_type: null
+    skip_if_unavailable: false
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.storage/storageaccounts'
+      | where tobool(properties.allowBlobPublicAccess) == true
+      | project id, name, resourceGroup, subscriptionId, location
+
+  - id: R006
+    title: "Resources not in any IaC template"
+    severity: high
+    category: orphaned
+    estimated_savings_resource_type: use_map
+    skip_if_unavailable: false
+    remediation_template: cleanup-orphaned-resources.json
+    kql: |
+      Resources
+      | where type !startswith 'microsoft.resources/'
+      | where type !startswith 'microsoft.authorization/'
+      | where type !startswith 'microsoft.insights/'
+      | project id, name, resourceGroup, subscriptionId, location, type, tags

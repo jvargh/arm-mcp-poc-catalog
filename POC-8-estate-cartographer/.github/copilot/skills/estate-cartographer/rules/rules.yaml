@@ -1,0 +1,128 @@
+# Estate Cartographer — Discovery Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, weight, category, kql.
+# remediation_template is null for all rules — this PoC is READ-ONLY.
+# kql MUST return a column named `id` and `resourceGroup` (where applicable).
+# Scope filter placeholder {{subscriptions_filter}} is injected by the skill at runtime.
+
+version: 1
+
+rules:
+  - id: R001
+    title: All subscriptions in scope
+    severity: info
+    weight: 0
+    category: discovery
+    remediation_template: null
+    kql: |
+      ResourceContainers
+      | where type =~ 'microsoft.resources/subscriptions'
+      {{subscriptions_filter}}
+      | project id, subscriptionId, displayName=tostring(properties.displayName), state=tostring(properties.state)
+      | sort by displayName asc
+
+  - id: R002
+    title: All resource groups per subscription
+    severity: info
+    weight: 0
+    category: discovery
+    remediation_template: null
+    kql: |
+      ResourceContainers
+      | where type =~ 'microsoft.resources/resourcegroups'
+      {{subscriptions_filter}}
+      | project id, name, resourceGroup=name, subscriptionId, location, tags
+      | sort by subscriptionId asc, name asc
+
+  - id: R003
+    title: All resources with type, location, and tags
+    severity: info
+    weight: 0
+    category: discovery
+    remediation_template: null
+    kql: |
+      Resources
+      {{subscriptions_filter}}
+      | project id, name, type, resourceGroup, subscriptionId, location, tags
+      | sort by type asc, name asc
+
+  - id: R004
+    title: NSG to subnet relationships
+    severity: info
+    weight: 0
+    category: relationships
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.network/networksecuritygroups'
+      {{subscriptions_filter}}
+      | mv-expand subnet = properties.subnets
+      | where isnotnull(subnet)
+      | project id, name, resourceGroup, subscriptionId,
+                subnetId=tostring(subnet.id),
+                subnetName=tostring(subnet.properties.name)
+      | sort by id asc, subnetId asc
+
+  - id: R005
+    title: Managed Identity to Key Vault relationships
+    severity: info
+    weight: 0
+    category: relationships
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.keyvault/vaults'
+      {{subscriptions_filter}}
+      | mv-expand accessPolicy = properties.accessPolicies
+      | where isnotnull(accessPolicy.objectId)
+      | join kind=leftouter (
+          Resources
+          | where type in~ (
+              'microsoft.managedidentity/userassignedidentities',
+              'microsoft.compute/virtualmachines',
+              'microsoft.web/sites',
+              'microsoft.containerservice/managedclusters'
+            )
+          | project miId=id, miName=name, principalId=tostring(identity.principalId)
+        ) on $left.['accessPolicy.objectId'] == $right.principalId
+      | where isnotnull(miId)
+      | project id, name, resourceGroup, subscriptionId,
+                miId, miName,
+                permissions=tostring(accessPolicy.permissions)
+      | sort by id asc, miId asc
+
+  - id: R006
+    title: High-risk overlay — public IPs with assigned address
+    severity: high
+    weight: 0
+    category: high-risk
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.network/publicipaddresses'
+      {{subscriptions_filter}}
+      | where isnotempty(tostring(properties.ipAddress))
+      | project id, name, resourceGroup, subscriptionId, location,
+                ipAddress=tostring(properties.ipAddress),
+                allocationMethod=tostring(properties.publicIPAllocationMethod)
+      | sort by subscriptionId asc, resourceGroup asc, name asc
+
+  - id: R007
+    title: High-risk overlay — unencrypted managed disks
+    severity: high
+    weight: 0
+    category: high-risk
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.compute/disks'
+      {{subscriptions_filter}}
+      | where isnull(properties.encryption.type)
+             or tostring(properties.encryption.type) =~ 'EncryptionAtRestWithPlatformKey'
+             and isnull(properties.encryptionSettingsCollection.enabled)
+      | where isnull(properties.encryptionSettingsCollection.enabled)
+             or tobool(properties.encryptionSettingsCollection.enabled) == false
+      | project id, name, resourceGroup, subscriptionId, location,
+                diskSizeGB=toint(properties.diskSizeGB),
+                encryptionType=tostring(properties.encryption.type)
+      | sort by subscriptionId asc, resourceGroup asc, name asc

@@ -1,0 +1,37 @@
+# Scope definition for the `prod` crown-jewels-security scan.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# Workload grouping key. Default groups findings by Azure resource group.
+# Set to a tag name (e.g. "App") to group by tag value instead.
+workload_key: resourceGroup
+
+# Resource group inclusion / exclusion (case-insensitive substrings, applied after query).
+# Acts as an allow-list: only RGs matching one of these names are scored.
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}
+
+# Crown jewel tag filter (optional).
+# If set, only resources bearing at least one of these tag key=value pairs are
+# included in the crown-jewels table. Leave as empty list to score all resources.
+crown_jewel_tags: ${crown_jewel_tags}
+
+# Severity weight multipliers per rule category.
+# Multiply the rule's base weight by the category multiplier before summing scores.
+# Default multiplier is 1.0 for any category not listed here.
+severity_weights:
+  identity-exposure: 1.5
+  broad-rbac: 1.3
+  key-vault-exposure: 1.2
+  public-exposure: 1.0
+
+# Export format for SecOps intake: sarif | csv
+export_format: sarif

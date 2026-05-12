@@ -1,0 +1,89 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "primaryRegion": {
+      "type": "string",
+      "metadata": {
+        "description": "The Azure region currently serving as primary (traffic will be redirected away from this region)."
+      }
+    },
+    "failoverRegion": {
+      "type": "string",
+      "metadata": {
+        "description": "The Azure region to fail over to (will become the new primary)."
+      }
+    },
+    "trafficManagerProfileName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Azure Traffic Manager profile to update endpoint weights on."
+      }
+    },
+    "trafficManagerResourceGroup": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource group containing the Traffic Manager profile."
+      }
+    },
+    "primaryEndpointName": {
+      "type": "string",
+      "metadata": {
+        "description": "Traffic Manager endpoint name for the primary region (will be set to weight 0)."
+      }
+    },
+    "failoverEndpointName": {
+      "type": "string",
+      "metadata": {
+        "description": "Traffic Manager endpoint name for the failover region (will be set to weight 100)."
+      }
+    },
+    "deploymentLabel": {
+      "type": "string",
+      "defaultValue": "rbook-failover",
+      "metadata": {
+        "description": "Label applied to the deployment and audit tags."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/trafficManagerProfiles/externalEndpoints",
+      "apiVersion": "2022-04-01",
+      "name": "[concat(parameters('trafficManagerProfileName'), '/', parameters('primaryEndpointName'))]",
+      "properties": {
+        "endpointStatus": "Disabled",
+        "weight": 0
+      },
+      "comments": "Disable primary region endpoint to redirect all traffic to failover region."
+    },
+    {
+      "type": "Microsoft.Network/trafficManagerProfiles/externalEndpoints",
+      "apiVersion": "2022-04-01",
+      "name": "[concat(parameters('trafficManagerProfileName'), '/', parameters('failoverEndpointName'))]",
+      "properties": {
+        "endpointStatus": "Enabled",
+        "weight": 100
+      },
+      "comments": "Enable failover region endpoint with full traffic weight."
+    }
+  ],
+  "outputs": {
+    "failoverApplied": {
+      "type": "bool",
+      "value": true
+    },
+    "primaryRegionDisabled": {
+      "type": "string",
+      "value": "[parameters('primaryRegion')]"
+    },
+    "failoverRegionEnabled": {
+      "type": "string",
+      "value": "[parameters('failoverRegion')]"
+    },
+    "deploymentLabel": {
+      "type": "string",
+      "value": "[parameters('deploymentLabel')]"
+    }
+  }
+}

@@ -1,0 +1,149 @@
+# Pre-flight Deployment Safety Check — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+#
+# Each rule has: id, title, severity, category, kql, skip_if_unavailable, remediation_hint.
+# A rule PASSES when the KQL returns 0 rows.
+# A rule FAILS when the KQL returns ≥ 1 row.
+# A rule is SKIPPED when skip_if_unavailable=true AND the query errors or returns no data
+# (table unavailable or data unavailable — see agent hard rules).
+
+version: 1
+
+rules:
+  - id: R001
+    title: Active resource health incidents in scope
+    severity: critical
+    category: resource-health
+    skip_if_unavailable: true
+    remediation_hint: "Investigate impaired resources in the Azure portal Health blade before deploying."
+    kql: |
+      HealthResources
+      | where type =~ 'microsoft.resourcehealth/availabilitystatuses'
+      | where tostring(properties.availabilityState) !~ 'Available'
+      | project id, name, resourceGroup, subscriptionId, location,
+                availabilityState=tostring(properties.availabilityState),
+                summary=tostring(properties.summary)
+
+  - id: R002
+    title: Overlapping deployments already Running in target scope
+    severity: high
+    category: concurrency
+    skip_if_unavailable: false
+    remediation_hint: "Wait for in-flight deployments to complete or cancel them before proceeding."
+    kql: |
+      Resources
+      | where type =~ 'microsoft.resources/deployments'
+      | where tostring(properties.provisioningState) =~ 'Running'
+      | project id, name, resourceGroup, subscriptionId, location,
+                state=tostring(properties.provisioningState),
+                startTime=tostring(properties.timestamp)
+
+  - id: R003
+    title: Dependency resources not in Succeeded provisioning state
+    severity: high
+    category: dependency-health
+    skip_if_unavailable: false
+    remediation_hint: "Repair or re-provision the failed dependency resources listed above before deploying."
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.keyvault/vaults',
+          'microsoft.storage/storageaccounts',
+          'microsoft.sql/servers/databases',
+          'microsoft.servicebus/namespaces',
+          'microsoft.eventhub/namespaces',
+          'microsoft.network/virtualnetworks'
+        )
+      | extend provState = tostring(properties.provisioningState)
+      | where isnotempty(provState) and provState !in~ ('Succeeded', '')
+      | project id, name, resourceGroup, subscriptionId, location, type, provisioningState=provState
+
+  - id: R004
+    title: Recent throttling or failed operations in the last 15 minutes (resourcechanges)
+    severity: high
+    category: recent-errors
+    skip_if_unavailable: true
+    remediation_hint: "Review Activity Log for throttling/errors and resolve before retrying the deployment."
+    kql: |
+      resourcechanges
+      | where todatetime(properties.changeAttributes.timestamp) >= ago(15m)
+      | where tostring(properties.changeType) in~ ('Create', 'Update', 'Delete')
+      | extend afterState = tostring(properties.after.properties.provisioningState)
+      | where afterState =~ 'Failed'
+      | project id, resourceGroup, subscriptionId,
+                changeType=tostring(properties.changeType),
+                changeTime=tostring(properties.changeAttributes.timestamp),
+                failedResourceId=tostring(properties.targetResourceId)
+
+  - id: R005
+    title: Quota headroom — current resource counts vs configured limits
+    severity: medium
+    category: quota
+    skip_if_unavailable: true
+    remediation_hint: "Request a quota increase via the Azure portal or reduce resource count. Compare vm_count/ip_count/nic_count/sa_count against quota_limits in prod.yaml."
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.compute/virtualmachines',
+          'microsoft.network/publicipaddresses',
+          'microsoft.network/networkinterfaces',
+          'microsoft.storage/storageaccounts'
+        )
+      | summarize currentCount=count() by subscriptionId, location, type
+      | project subscriptionId, location, resourceType=type, currentCount
+
+  - id: R006
+    title: Resources lacking the iac-managed tag (possible drift from IaC source)
+    severity: medium
+    category: drift
+    skip_if_unavailable: false
+    remediation_hint: "Add the 'iac-managed=true' tag to resources managed by IaC, or re-apply your IaC pipeline to reconcile state."
+    kql: |
+      Resources
+      | where type !startswith 'microsoft.insights/'
+      | where type !startswith 'microsoft.resources/deployments'
+      | where isnull(tags['iac-managed']) or tags['iac-managed'] !~ 'true'
+      | project id, name, resourceGroup, subscriptionId, location, type
+
+  - id: R007
+    title: Resources missing required deployment tags (Environment, Owner, deployment-scope)
+    severity: medium
+    category: tag-compliance
+    skip_if_unavailable: false
+    remediation_hint: "Apply required tags (Environment, Owner, deployment-scope) to all resources before deploying."
+    kql: |
+      Resources
+      | where type !startswith 'microsoft.insights/'
+      | where type !startswith 'microsoft.resources/deployments'
+      | where isnull(tags.Environment)
+            or isnull(tags.Owner)
+            or isnull(tags['deployment-scope'])
+      | project id, name, resourceGroup, subscriptionId, location, type
+
+  - id: R008
+    title: Failed deployments in the last 1 hour in target scope
+    severity: high
+    category: recent-failures
+    skip_if_unavailable: false
+    remediation_hint: "Investigate and resolve the failed deployments listed above before re-deploying."
+    kql: |
+      Resources
+      | where type =~ 'microsoft.resources/deployments'
+      | where tostring(properties.provisioningState) =~ 'Failed'
+      | extend deployTime = todatetime(properties.timestamp)
+      | where deployTime >= ago(1h)
+      | project id, name, resourceGroup, subscriptionId, location,
+                state=tostring(properties.provisioningState),
+                timestamp=tostring(properties.timestamp)
+
+  - id: R009
+    title: Region capacity signal — VM count in target location
+    severity: low
+    category: region-capacity
+    skip_if_unavailable: true
+    remediation_hint: "If region appears near capacity, consider an alternate region or open a support ticket for capacity reservation."
+    kql: |
+      Resources
+      | where type =~ 'microsoft.compute/virtualmachines'
+      | summarize vm_count=count() by subscriptionId, location
+      | project subscriptionId, location, vm_count

@@ -1,0 +1,69 @@
+# Auto-Rollback Orchestrator — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, kql.
+# kql is executed verbatim via execute_query — NO generate_query, NO validate_query.
+# All rules target the deployment's resource_group and subscription_id (injected at runtime).
+
+version: 1
+
+rules:
+  - id: R001
+    title: All deployed resources in Succeeded provisioningState
+    severity: critical
+    description: >
+      Fails if any resource in the target resource group is not in the Succeeded
+      provisioningState after the deployment settles.
+    kql: |
+      Resources
+      | where resourceGroup =~ '${resource_group}'
+      | where subscriptionId =~ '${subscription_id}'
+      | where properties.provisioningState !~ 'Succeeded'
+      | project id, name, type, resourceGroup, subscriptionId,
+                provisioningState=tostring(properties.provisioningState)
+
+  - id: R002
+    title: No new public IP exposure
+    severity: high
+    description: >
+      Fails if any public IP address resource with an assigned IP exists in the
+      target resource group after the deployment. Catches unintended exposure.
+    kql: |
+      Resources
+      | where type =~ 'microsoft.network/publicipaddresses'
+      | where resourceGroup =~ '${resource_group}'
+      | where subscriptionId =~ '${subscription_id}'
+      | where isnotempty(tostring(properties.ipAddress))
+      | project id, name, resourceGroup, subscriptionId, location,
+                ip=tostring(properties.ipAddress)
+
+  - id: R003
+    title: Required tags present on new resources
+    severity: medium
+    description: >
+      Fails if any resource in the target resource group is missing one or more
+      of the required tags (Environment, Owner, CostCenter).
+    kql: |
+      Resources
+      | where resourceGroup =~ '${resource_group}'
+      | where subscriptionId =~ '${subscription_id}'
+      | where isnull(tags.Environment) or isnull(tags.Owner) or isnull(tags.CostCenter)
+      | project id, name, type, resourceGroup, subscriptionId,
+                missingTags=pack_array(
+                  iff(isnull(tags.Environment), 'Environment', ''),
+                  iff(isnull(tags.Owner), 'Owner', ''),
+                  iff(isnull(tags.CostCenter), 'CostCenter', '')
+                )
+
+  - id: R004
+    title: No error-state resources in target RG post-deploy
+    severity: critical
+    description: >
+      Fails if any resource in the target resource group is in a Failed, Canceled,
+      or Deleting provisioningState — indicating a partially-broken deployment.
+    kql: |
+      Resources
+      | where resourceGroup =~ '${resource_group}'
+      | where subscriptionId =~ '${subscription_id}'
+      | where properties.provisioningState in~ ('Failed', 'Canceled', 'Deleting')
+      | project id, name, type, resourceGroup, subscriptionId,
+                provisioningState=tostring(properties.provisioningState)

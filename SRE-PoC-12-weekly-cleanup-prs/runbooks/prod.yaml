@@ -1,0 +1,49 @@
+# Scope definition for the `prod` weekly cleanup run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific values.
+# Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml into this file.
+# See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# Resource group inclusion / exclusion (case-insensitive substrings, applied after query).
+# rg_include acts as an allow-list: only matching RGs are included.
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}
+
+# Path to the local clone of the IaC repository root (used by R003 and R006 drift rules).
+iac_repo_path: "${iac_repo_path}"
+
+# Schedule (informational only — v1 is invoked manually via the `scan` verb).
+# Future: wire as a cron expression for GitHub Actions or Azure Pipelines.
+# Example: "0 9 * * 1" = 09:00 UTC every Monday.
+schedule: "0 9 * * 1"
+
+# Number of days of inactivity after which a resource is considered orphaned (R002).
+orphan_threshold_days: 30
+
+# Estimated monthly cost (USD) per resource type for savings calculations.
+# Used when rule.estimated_savings_resource_type == "use_map".
+# Operators should update these values to match actual Azure pricing for their tier.
+savings_rate_map:
+  microsoft.compute/virtualmachines: 150
+  microsoft.compute/disks: 20
+  microsoft.compute/snapshots: 10
+  microsoft.network/applicationgateways: 200
+  microsoft.network/virtualnetworkgateways: 100
+  microsoft.network/loadbalancers: 30
+  microsoft.network/publicipaddresses: 5
+  microsoft.network/networksecuritygroups: 0
+  microsoft.storage/storageaccounts: 20
+  microsoft.keyvault/vaults: 5
+  microsoft.sql/servers: 50
+  microsoft.web/serverfarms: 80
+  microsoft.web/sites: 10
+  microsoft.containerservice/managedclusters: 500
+  microsoft.cache/redis: 60
+  microsoft.servicebus/namespaces: 25
+  default: 0

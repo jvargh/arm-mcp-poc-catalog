@@ -1,0 +1,89 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "primaryRegion": {
+      "type": "string",
+      "metadata": {
+        "description": "The Azure region that was the original primary (before the failover). Traffic will be restored here."
+      }
+    },
+    "failoverRegion": {
+      "type": "string",
+      "metadata": {
+        "description": "The Azure region that served as the failover target (will be de-prioritized)."
+      }
+    },
+    "trafficManagerProfileName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Azure Traffic Manager profile to restore endpoint weights on."
+      }
+    },
+    "trafficManagerResourceGroup": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource group containing the Traffic Manager profile."
+      }
+    },
+    "primaryEndpointName": {
+      "type": "string",
+      "metadata": {
+        "description": "Traffic Manager endpoint name for the primary region (will be restored to weight 100)."
+      }
+    },
+    "failoverEndpointName": {
+      "type": "string",
+      "metadata": {
+        "description": "Traffic Manager endpoint name for the failover region (will be set to weight 0)."
+      }
+    },
+    "deploymentLabel": {
+      "type": "string",
+      "defaultValue": "rbook-rollback",
+      "metadata": {
+        "description": "Label applied to the rollback deployment and audit tags."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/trafficManagerProfiles/externalEndpoints",
+      "apiVersion": "2022-04-01",
+      "name": "[concat(parameters('trafficManagerProfileName'), '/', parameters('primaryEndpointName'))]",
+      "properties": {
+        "endpointStatus": "Enabled",
+        "weight": 100
+      },
+      "comments": "Restore primary region endpoint — re-enable with full traffic weight."
+    },
+    {
+      "type": "Microsoft.Network/trafficManagerProfiles/externalEndpoints",
+      "apiVersion": "2022-04-01",
+      "name": "[concat(parameters('trafficManagerProfileName'), '/', parameters('failoverEndpointName'))]",
+      "properties": {
+        "endpointStatus": "Disabled",
+        "weight": 0
+      },
+      "comments": "Disable failover region endpoint — failover is no longer needed."
+    }
+  ],
+  "outputs": {
+    "rollbackApplied": {
+      "type": "bool",
+      "value": true
+    },
+    "primaryRegionRestored": {
+      "type": "string",
+      "value": "[parameters('primaryRegion')]"
+    },
+    "failoverRegionDisabled": {
+      "type": "string",
+      "value": "[parameters('failoverRegion')]"
+    },
+    "deploymentLabel": {
+      "type": "string",
+      "value": "[parameters('deploymentLabel')]"
+    }
+  }
+}

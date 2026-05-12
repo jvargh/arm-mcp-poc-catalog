@@ -1,0 +1,82 @@
+# Cost Driver Finder — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, weight, category, skip_if_unavailable (optional),
+#                remediation_template, kql.
+# weight is N/A for informational rules (set to 0).
+# kql MUST return columns `id` and `resourceGroup` at minimum.
+# `${time_window_days}` and `${target_region}` are substituted from prod.yaml at load time.
+
+version: 1
+
+rules:
+  - id: R001
+    title: Newly created resources in time window
+    severity: informational
+    weight: 0
+    category: cost-new-resource
+    remediation_template: null
+    kql: |
+      Resources
+      | where isnotempty(tostring(systemData.createdAt))
+      | where todatetime(systemData.createdAt) >= ago(${time_window_days}d)
+      | where location =~ '${target_region}'
+      | project id,
+                name,
+                resourceGroup,
+                subscriptionId,
+                location,
+                type,
+                createdAt=tostring(systemData.createdAt),
+                owner=tostring(tags.Owner)
+      | order by todatetime(createdAt) desc, name asc
+
+  - id: R002
+    title: Recently resized or modified resources in time window
+    severity: informational
+    weight: 0
+    category: cost-modified-resource
+    skip_if_unavailable: true
+    remediation_template: null
+    kql: |
+      resourcechanges
+      | where todatetime(properties.changeAttributes.timestamp) >= ago(${time_window_days}d)
+      | where properties.changeType =~ 'Update'
+      | extend targetId       = tostring(properties.targetResourceId)
+      | extend targetLocation = tostring(properties.targetResourceLocation)
+      | where targetLocation =~ '${target_region}'
+      | extend rg = tostring(split(targetId, '/')[4])
+      | project id=targetId,
+                name=tostring(split(targetId, '/')[8]),
+                resourceGroup=rg,
+                subscriptionId=tostring(properties.changeAttributes.subscriptionId),
+                location=targetLocation,
+                changedAt=tostring(properties.changeAttributes.timestamp),
+                changeType=tostring(properties.changeType)
+      | order by todatetime(changedAt) desc, id asc
+
+  - id: R003
+    title: Resources in target region without owner tag
+    severity: medium
+    weight: 0
+    category: cost-untagged-resource
+    remediation_template: null
+    kql: |
+      Resources
+      | where location =~ '${target_region}'
+      | join kind=leftouter (
+            ResourceContainers
+            | where type =~ 'microsoft.resources/resourcegroups'
+            | project subscriptionId,
+                      resourceGroup=name,
+                      rgOwner=tostring(tags.Owner)
+        ) on subscriptionId, resourceGroup
+      | where isnull(tags.Owner) or tostring(tags.Owner) == ''
+      | project id,
+                name,
+                resourceGroup,
+                subscriptionId,
+                location,
+                type,
+                tagOwner=tostring(tags.Owner),
+                rgOwner
+      | order by name asc

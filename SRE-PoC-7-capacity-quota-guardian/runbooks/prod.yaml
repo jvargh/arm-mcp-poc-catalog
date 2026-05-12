@@ -1,0 +1,122 @@
+# Scope definition for the `prod` capacity-quota-guardian run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml.
+# See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to query. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# --- Quota limits ---
+# operator must keep in sync with `az vm list-usage --location <region>` output.
+# Structure: quota_limits.<resource_type>.<region> = <integer limit>
+# For storage_accounts the key is the subscriptionId (subscription-scoped limit).
+quota_limits:
+  virtual_machines:
+    eastus:
+      Standard_D2s_v3: 100
+      Standard_D4s_v3: 50
+      Standard_D8s_v3: 25
+      Standard_D2s_v5: 100
+      Standard_D4s_v5: 50
+      _total: 350
+    eastus2:
+      Standard_D2s_v3: 100
+      Standard_D4s_v3: 50
+      Standard_D8s_v3: 25
+      Standard_D2s_v5: 100
+      Standard_D4s_v5: 50
+      _total: 350
+    westus2:
+      Standard_D2s_v3: 100
+      Standard_D4s_v3: 50
+      Standard_D8s_v3: 25
+      _total: 300
+    westus3:
+      Standard_D2s_v3: 50
+      Standard_D4s_v3: 25
+      _total: 200
+    centralus:
+      Standard_D2s_v3: 100
+      Standard_D4s_v3: 50
+      _total: 300
+    northeurope:
+      Standard_D2s_v3: 100
+      Standard_D4s_v3: 50
+      _total: 300
+    westeurope:
+      Standard_D2s_v3: 100
+      Standard_D4s_v3: 50
+      _total: 300
+  vcores:
+    # Total vCPU quota per region (all SKU families combined)
+    eastus: 200
+    eastus2: 200
+    westus2: 200
+    westus3: 150
+    centralus: 200
+    northeurope: 200
+    westeurope: 200
+  storage_accounts:
+    # Per-subscription limit (subscription-scoped, not region-scoped)
+    # key = subscription_id placeholder; runtime substitutes the real sub ID
+    ${subscription_id}: 250
+  public_ip_addresses:
+    # Public IP address quota per region
+    eastus: 96
+    eastus2: 96
+    westus2: 96
+    westus3: 80
+    centralus: 96
+    northeurope: 96
+    westeurope: 96
+  network_interfaces:
+    # NIC quota per region (informational; not evaluated by current rules)
+    eastus: 65536
+    eastus2: 65536
+    westus2: 65536
+    westus3: 65536
+    centralus: 65536
+    northeurope: 65536
+    westeurope: 65536
+
+# --- Alternate region suggestions ---
+# Primary region → ordered fallback list (nearest / lowest latency first).
+# Agent uses this for FAIL rows. Ordering MUST reflect latency-tier proximity.
+alternate_regions:
+  eastus:
+    - eastus2
+    - centralus
+    - westus2
+  eastus2:
+    - eastus
+    - centralus
+    - westus2
+  westus2:
+    - westus3
+    - centralus
+    - eastus
+  westus3:
+    - westus2
+    - centralus
+    - eastus
+  centralus:
+    - eastus
+    - eastus2
+    - westus2
+  northeurope:
+    - westeurope
+    - uksouth
+    - francecentral
+  westeurope:
+    - northeurope
+    - uksouth
+    - francecentral
+
+# --- Headroom threshold ---
+# Agent will FAIL any row where usage_pct exceeds this value.
+# Range: 0–100. Default 80. Increase cautiously — higher values reduce safety margin.
+headroom_threshold_pct: 80

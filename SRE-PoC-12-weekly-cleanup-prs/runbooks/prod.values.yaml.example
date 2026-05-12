@@ -1,0 +1,13 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed as a schema reference.
+
+subscription_id: "<your-subscription-guid-here>"
+
+rg_include:
+  - "<rg-name-1>"
+  - "<rg-name-2>"
+
+rg_exclude: []
+
+# Path to the local clone of the IaC repository root (used by R003 NSG drift and R006 IaC coverage).
+iac_repo_path: "C:/repos/my-infra"

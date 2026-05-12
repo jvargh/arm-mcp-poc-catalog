@@ -1,0 +1,12 @@
+{
+  "agents": {
+    "bishop": {
+      "persistent_name": "Bishop",
+      "universe": "Alien",
+      "role": "Lead / Fleet Lead",
+      "created_at": "2026-05-12T04:59:51Z",
+      "legacy_named": false,
+      "status": "active"
+    }
+  }
+}

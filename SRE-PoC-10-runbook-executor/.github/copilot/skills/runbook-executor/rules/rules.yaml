@@ -1,0 +1,135 @@
+# On-Call Runbook Executor — Step Type Schema (rules.yaml)
+#
+# ⚠️  DETERMINISM DEVIATION — READ BEFORE EDITING ⚠️
+#
+# This file does NOT define a list of rules like other PoC rules.yaml files.
+# It defines STEP TYPE SCHEMAS — one schema per DSL step type (check, deploy,
+# confirm, rollback). These schemas are the validation rules the agent uses to
+# validate each step in a runbook's `runbook_steps` list before execution.
+#
+# Individual runbook instances define their OWN `runbook_steps` ordered list
+# inside their runbook YAML file (e.g., runbooks/prod.yaml). The schema here
+# is type-level metadata, not instance-level step definitions.
+#
+# See README.md "## Determinism Deviation" for full rationale.
+#
+# The SHA-256 of this file (first 8 hex chars) is used in the run_id:
+#   run_id = RBOOK-{YYYYMMDD}-{runbook_name}-{sha256(this file)[:8]}
+#
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+
+version: 1
+
+step_type_schemas:
+
+  check:
+    description: >
+      An ARG (Azure Resource Graph) health check. The agent validates and executes
+      a literal KQL query. A zero-row result means PASS (no failing resources).
+      A non-empty result means FAIL (resources violating the check were found).
+    required_fields:
+      - name
+      - type
+      - kql_or_template   # literal KQL string
+      - on_fail
+    optional_fields:
+      - params             # unused for check steps; ignored if present
+      - max_timeout_seconds
+    kql_or_template_type: KQL_STRING
+    on_fail_values:
+      - halt
+      - rollback
+      - continue
+    max_timeout_seconds_default: 300
+    tool_sequence:
+      - validate_query    # called first; on failure → FAIL immediately
+      - execute_query     # called second; empty rows → PASS, non-empty → FAIL
+    pass_condition: "execute_query returns zero rows (no failing resources detected)"
+    fail_condition: "validate_query fails OR execute_query returns one or more rows"
+    example_kql: |
+      Resources
+      | where type =~ 'microsoft.compute/virtualmachines'
+      | where tostring(properties.storageProfile.osDisk.managedDisk.storageAccountType) =~ 'Standard_LRS'
+      | project id, name, resourceGroup, subscriptionId, location
+
+  deploy:
+    description: >
+      An ARM template deployment step. In v1, this step is SIMULATED — the agent
+      must NOT call create_template_deployment. A simulated Succeeded outcome is
+      written to the evidence pack with a "WOULD DEPLOY (NOT EXECUTED in v1)" marker.
+      In a future v2 live mode, create_template_deployment would be called here.
+    required_fields:
+      - name
+      - type
+      - kql_or_template   # path to ARM template under remediation/
+      - on_fail
+    optional_fields:
+      - params             # key/value parameters for the ARM template
+      - max_timeout_seconds
+    kql_or_template_type: TEMPLATE_PATH   # relative path under remediation/
+    on_fail_values:
+      - halt
+      - rollback
+      - continue
+    max_timeout_seconds_default: 300
+    tool_sequence:
+      - create_template_deployment         # SIMULATED in v1 — not actually called
+      - get_arm_template_deployment_status # SIMULATED in v1 — not actually called
+    v1_behavior: SIMULATED
+    v1_note: >
+      Per ratification #3 (locked decision): v1 does not call create_template_deployment.
+      The agent emits "WOULD DEPLOY (NOT EXECUTED in v1)" and fabricates a Succeeded status.
+    pass_condition: "deployment status = Succeeded (simulated in v1)"
+    fail_condition: "deployment status = Failed OR timeout exceeded"
+    cancel_tool: cancel_arm_template_deployment   # available if deployment is in-flight (live mode only)
+
+  confirm:
+    description: >
+      A human gate step. The agent pauses and requires the operator to type 'yes' or
+      'confirm' before the runbook advances. Any other input (including 'no', 'abort',
+      or timeout) causes FAIL and on_fail logic is applied. No MCP tools are invoked.
+    required_fields:
+      - name
+      - type
+      - on_fail
+    optional_fields:
+      - max_timeout_seconds
+    kql_or_template_type: null   # must be null or omitted; confirm steps have no query/template
+    on_fail_values:
+      - halt
+      - rollback
+      - continue
+    max_timeout_seconds_default: 300
+    tool_sequence: []            # no MCP tool calls — human input only
+    pass_condition: "user types 'yes' or 'confirm' (case-insensitive, trimmed)"
+    fail_condition: "user types 'no', 'abort', any other value, OR timeout exceeded"
+    confirmation_prompt_template: "prompts/cancel.prompt.md (for cancel confirms) or inline for step confirms"
+
+  rollback:
+    description: >
+      An ARM template rollback step. Mirrors the deploy step type but represents a
+      reversal of a previous deployment. In v1, this step is SIMULATED — the agent
+      must NOT call create_template_deployment. A simulated Succeeded outcome is
+      written to the evidence pack with a "WOULD ROLLBACK (NOT EXECUTED in v1)" marker.
+    required_fields:
+      - name
+      - type
+      - kql_or_template   # path to rollback ARM template under remediation/
+      - on_fail
+    optional_fields:
+      - params             # key/value parameters for the rollback ARM template
+      - max_timeout_seconds
+    kql_or_template_type: TEMPLATE_PATH   # relative path under remediation/
+    on_fail_values:
+      - halt
+      - continue          # rollback cannot itself trigger another rollback
+    max_timeout_seconds_default: 300
+    tool_sequence:
+      - create_template_deployment         # SIMULATED in v1 — not actually called
+      - get_arm_template_deployment_status # SIMULATED in v1 — not actually called
+    v1_behavior: SIMULATED
+    v1_note: >
+      Per ratification #3 (locked decision): v1 does not call create_template_deployment.
+      The agent emits "WOULD ROLLBACK (NOT EXECUTED in v1)" and fabricates a Succeeded status.
+    pass_condition: "rollback deployment status = Succeeded (simulated in v1)"
+    fail_condition: "rollback deployment status = Failed OR timeout exceeded"

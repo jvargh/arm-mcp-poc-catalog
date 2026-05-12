@@ -1,0 +1,18 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+
+# Path to the ARM template you want to analyze before deployment.
+# Relative to the workspace root (forward or back slashes accepted).
+template_path: "path/to/azuredeploy.json"
+
+# Risk score threshold. The agent reports EXCEEDED if total_risk_score >= this value.
+risk_threshold: 30
+
+rg_include:
+  - "<rg-name-1>"
+  - "<rg-name-2>"
+
+rg_exclude: []

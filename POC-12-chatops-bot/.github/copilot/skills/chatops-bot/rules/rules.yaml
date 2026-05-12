@@ -1,0 +1,82 @@
+# ChatOps Bot — Pre-Canned Query Categories v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# These are "pre-canned question categories" — NOT scored rules.
+# weight is 0 for all chatops categories (counts/aggregations are not scored).
+# severity is "informational" for all chatops categories (read-only).
+# kql MUST return columns `id` and `resourceGroup` at minimum.
+# Aggregation queries may also return count columns (e.g. resource_count, type, location).
+
+version: 1
+
+rules:
+  - id: R001
+    title: Count resources by type
+    severity: informational
+    weight: 0
+    category: resource-inventory
+    remediation_template: null
+    kql: |
+      Resources
+      | summarize resource_count = count() by type
+      | extend id = type, resourceGroup = "N/A"
+      | project id, resourceGroup, type, resource_count
+      | order by resource_count desc
+
+  - id: R002
+    title: Count resources by region
+    severity: informational
+    weight: 0
+    category: resource-geography
+    remediation_template: null
+    kql: |
+      Resources
+      | summarize resource_count = count() by location
+      | extend id = location, resourceGroup = "N/A"
+      | project id, resourceGroup, location, resource_count
+      | order by resource_count desc
+
+  - id: R003
+    title: List resources by tag
+    severity: informational
+    weight: 0
+    category: resource-tagging
+    remediation_template: null
+    kql: |
+      Resources
+      | where isnotempty(tags)
+      | project id, name, resourceGroup, subscriptionId, location, type, tags
+      | order by resourceGroup asc, id asc
+
+  - id: R004
+    title: SQL databases by tier
+    severity: informational
+    weight: 0
+    category: sql-inventory
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.sql/servers/databases'
+      | extend tier = tostring(sku.tier)
+      | summarize resource_count = count() by tier
+      | extend id = tier, resourceGroup = "N/A"
+      | project id, resourceGroup, tier, resource_count
+      | order by resource_count desc
+
+  - id: R005
+    title: Resource count by subscription
+    severity: informational
+    weight: 0
+    category: subscription-inventory
+    remediation_template: null
+    kql: |
+      ResourceContainers
+      | where type =~ 'microsoft.resources/subscriptions'
+      | project subscriptionId, subscriptionName = name
+      | join kind=leftouter (
+          Resources
+          | summarize resource_count = count() by subscriptionId
+        ) on subscriptionId
+      | extend id = subscriptionId, resourceGroup = "N/A"
+      | project id, resourceGroup, subscriptionId, subscriptionName,
+                resource_count = coalesce(resource_count, 0)
+      | order by resource_count desc

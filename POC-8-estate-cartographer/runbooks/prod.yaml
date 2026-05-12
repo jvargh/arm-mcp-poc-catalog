@@ -1,0 +1,23 @@
+# Scope definition for the `prod` estate-cartographer run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Optional: if set, the agent discovers all subscriptions under this management group
+# using R001 before issuing ARG queries. Leave empty to use explicit subscriptions list.
+management_group: "${management_group}"
+
+# Subscriptions to include. If management_group is set and this list is empty,
+# subscriptions are discovered dynamically from the MG.
+subscriptions: ${subscriptions}
+
+# Maximum number of subscriptions to process per run (paging cap).
+max_subscriptions: ${max_subscriptions}
+
+# Maximum number of Mermaid nodes to render. If exceeded, a warning is emitted
+# and the diagram is truncated at this limit.
+mermaid_max_nodes: ${mermaid_max_nodes}

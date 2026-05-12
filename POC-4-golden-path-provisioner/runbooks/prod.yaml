@@ -1,0 +1,99 @@
+# Scope definition for the `prod` golden-path-provisioner runbook.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to target for compliance checks and deployments.
+subscriptions: ["${subscription_id}"]
+
+# Short prefix for all generated resource names.
+# Full naming pattern: {naming_prefix}-{team}-{region}-{resource-type-short}
+naming_prefix: "${naming_prefix}"
+
+# Default tags applied to every resource. Merged with runtime tags (Team, DeployedOn).
+default_tags:
+  Environment: "${environment}"
+  ManagedBy: "golden-path-provisioner"
+  CostCenter: "${cost_center}"
+
+# Allowed Azure regions. Deployments to any other region are aborted.
+allowed_regions: ${allowed_regions}
+
+# Golden path template catalog.
+# keyword-match is case-insensitive. First match wins.
+# param_schema lists the resource_types[] that will be named + the required parameters.
+golden_path_catalog:
+  aks-baseline:
+    path: "skills/golden-path-provisioner/remediation/golden-path-aks-baseline.json"
+    keywords:
+      - aks
+      - kubernetes
+      - container
+      - acr
+      - registry
+      - k8s
+    param_schema:
+      resource_types:
+        - managedclusters
+        - registries
+        - vaults
+        - workspaces
+      required_parameters:
+        - namingPrefix
+        - team
+        - location
+        - environment
+        - aksNodeCount
+        - aksNodeVmSize
+        - logAnalyticsRetentionDays
+
+  webapp-baseline:
+    path: "skills/golden-path-provisioner/remediation/golden-path-webapp-baseline.json"
+    keywords:
+      - webapp
+      - web app
+      - app service
+      - api
+      - website
+      - sql
+      - database
+    param_schema:
+      resource_types:
+        - sites
+        - servers
+        - vaults
+      required_parameters:
+        - namingPrefix
+        - team
+        - location
+        - environment
+        - appServicePlanSku
+        - appServicePlanCapacity
+        - sqlAdminLogin
+        - sqlAdminPassword
+
+  data-baseline:
+    path: "skills/golden-path-provisioner/remediation/golden-path-data-baseline.json"
+    keywords:
+      - data
+      - storage
+      - data factory
+      - adf
+      - pipeline
+      - analytics
+      - etl
+    param_schema:
+      resource_types:
+        - storageaccounts
+        - factories
+        - vaults
+      required_parameters:
+        - namingPrefix
+        - team
+        - location
+        - environment
+        - storageSkuName

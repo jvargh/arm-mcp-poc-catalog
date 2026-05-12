@@ -1,0 +1,49 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+
+# Environment tag values to include as right-size candidates.
+target_environments:
+  - "dev"
+  - "test"
+
+# Default target SKU for downsizing when a rule does not specify one.
+target_sku: "Standard_D4s_v5"
+
+# Estimated monthly cost per SKU in USD (integers).
+# Update these values to reflect current Azure pricing for your region.
+# Reference: https://azure.microsoft.com/en-us/pricing/details/virtual-machines/
+savings_rate_per_sku:
+  Standard_D4s_v5: 140
+  Standard_D8s_v5: 280
+  Standard_D16s_v5: 560
+  Standard_D32s_v5: 1120
+  Standard_D64s_v5: 2240
+  Standard_D8s_v3: 270
+  Standard_D16s_v3: 540
+  Standard_D32s_v3: 1080
+  Standard_D8s_v4: 280
+  Standard_D16s_v4: 560
+  Standard_D32s_v4: 1120
+  Standard_E8s_v3: 400
+  Standard_E16s_v3: 800
+  Standard_E8s_v4: 420
+  Standard_E16s_v4: 840
+  Standard_F16s_v2: 530
+  Standard_F32s_v2: 1060
+  Standard_D4s_v3: 135
+
+# Set to true to prevent all deployments (overrides everything).
+freeze_active: false
+
+# Optional ISO-8601 freeze windows (no deployments during these intervals).
+# Example: "2026-12-24T00:00:00Z/2026-12-26T00:00:00Z"
+freeze_windows: []
+
+# Resource group name substrings to include (case-insensitive). Empty = all.
+rg_include: []
+
+# Resource group name substrings to exclude (case-insensitive).
+rg_exclude: []

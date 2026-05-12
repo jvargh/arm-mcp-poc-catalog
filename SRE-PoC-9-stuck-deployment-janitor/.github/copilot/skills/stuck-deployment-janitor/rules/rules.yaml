@@ -1,0 +1,129 @@
+# Stuck Deployment Janitor — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+#
+# Each rule has: id, title, description, kql, classification_reason.
+# kql MUST return columns: id, name, resourceGroup, subscriptionId, durationHours.
+# ALL KQL is pre-defined and literal. No LLM-side derivation is permitted.
+# validate_query and generate_query are NOT in the tool allowlist for this PoC.
+#
+# Scope substitution tokens injected by the skill at runtime:
+#   ${subscription_filter}  → expands to: | where subscriptionId in~ (${subscription_ids_csv})
+#   ${rg_filter}            → expands to: | where resourceGroup in~ (${rg_include_csv})  (omitted when rg_include is empty)
+#   ${threshold_hours}      → auto_cancel_threshold_hours from runbook (default 4)
+
+version: 1
+
+rules:
+  - id: R001
+    title: Deployments running beyond expected duration
+    description: >
+      Finds all ARM deployments whose provisioningState is Running and whose elapsed time
+      since the recorded start timestamp exceeds auto_cancel_threshold_hours. These are
+      candidates for further classification by R002–R004.
+    classification_reason: exceeded-threshold
+    kql: |
+      Resources
+      | where type =~ 'microsoft.resources/deployments'
+      | where tostring(properties.provisioningState) =~ 'Running'
+      | extend startTime = todatetime(properties.timestamp)
+      | extend durationHours = toint(datetime_diff('hour', now(), startTime))
+      | where durationHours >= ${threshold_hours}
+      ${subscription_filter}
+      ${rg_filter}
+      | project id, name, resourceGroup, subscriptionId, location,
+                startTime, durationHours,
+                deploymentMode = tostring(properties.mode),
+                correlationId  = tostring(properties.correlationId)
+      | order by durationHours desc, name asc
+
+  - id: R002
+    title: Classify — waiting on deleted dependency
+    description: >
+      Cross-references the dependsOn list of each running deployment against the live
+      resource graph. If a dependency resource ID no longer exists in Resources, the
+      deployment is classified as waiting on a deleted (or never-created) dependency.
+      This rule is self-contained — all logic is in the KQL join.
+    classification_reason: deleted-dependency
+    kql: |
+      Resources
+      | where type =~ 'microsoft.resources/deployments'
+      | where tostring(properties.provisioningState) =~ 'Running'
+      | extend startTime = todatetime(properties.timestamp)
+      | extend durationHours = toint(datetime_diff('hour', now(), startTime))
+      | where durationHours >= 1
+      ${subscription_filter}
+      ${rg_filter}
+      | mv-expand dep = properties.dependencies
+      | extend depId = tolower(tostring(dep.id))
+      | where isnotempty(depId)
+      | join kind=leftanti (
+          Resources
+          | project existingId = tolower(id)
+        ) on $left.depId == $right.existingId
+      | summarize missingDeps = make_list(tostring(dep.resourceName))
+                  by id, name, resourceGroup, subscriptionId, durationHours
+      | extend classificationReason = 'deleted-dependency'
+      | project id, name, resourceGroup, subscriptionId, durationHours,
+                classificationReason, detail = tostring(missingDeps)
+      | order by durationHours desc, name asc
+
+  - id: R003
+    title: Classify — quota loop (quota-exceeded signal in deployment properties)
+    description: >
+      Identifies running deployments where the ARM error payload contains a quota-exceeded
+      signal (error code or status message). The KQL is self-contained and does not rely on
+      ActivityLog or any table other than Resources.
+    classification_reason: quota-loop
+    kql: |
+      Resources
+      | where type =~ 'microsoft.resources/deployments'
+      | where tostring(properties.provisioningState) =~ 'Running'
+      | extend startTime = todatetime(properties.timestamp)
+      | extend durationHours = toint(datetime_diff('hour', now(), startTime))
+      | where durationHours >= 1
+      ${subscription_filter}
+      ${rg_filter}
+      | where tostring(properties.error.code)    contains_cs 'Quota'
+             or tostring(properties.error.details) contains_cs 'QuotaExceeded'
+             or tostring(properties.statusMessage) contains_cs 'QuotaExceeded'
+             or tostring(properties.error.message) contains_cs 'quota'
+      | extend classificationReason = 'quota-loop'
+      | extend errorCode = tostring(properties.error.code)
+      | project id, name, resourceGroup, subscriptionId, durationHours,
+                classificationReason, detail = errorCode
+      | order by durationHours desc, name asc
+
+  - id: R004
+    title: Classify — genuinely slow (known long-running resource types)
+    description: >
+      Identifies running deployments whose dependency list includes resource types that are
+      known to take many hours (e.g., Cosmos DB restores, SQL Managed Instances, Recovery
+      Services vaults). These deployments should NOT be cancelled prematurely.
+      Known slow types are seeded from runbook known_slow_types and matched inside this KQL.
+    classification_reason: genuinely-slow
+    kql: |
+      Resources
+      | where type =~ 'microsoft.resources/deployments'
+      | where tostring(properties.provisioningState) =~ 'Running'
+      | extend startTime = todatetime(properties.timestamp)
+      | extend durationHours = toint(datetime_diff('hour', now(), startTime))
+      | where durationHours >= 1
+      ${subscription_filter}
+      ${rg_filter}
+      | mv-expand dep = properties.dependencies
+      | where tostring(dep.resourceType) in~ (
+            'microsoft.documentdb/databaseaccounts',
+            'microsoft.dbformysql/flexibleservers',
+            'microsoft.dbforpostgresql/flexibleservers',
+            'microsoft.recoveryservices/vaults',
+            'microsoft.sql/managedinstances',
+            'microsoft.sql/servers',
+            'microsoft.hdinsight/clusters',
+            'microsoft.synapse/workspaces'
+          )
+      | summarize slowTypes = make_list(tostring(dep.resourceType))
+                  by id, name, resourceGroup, subscriptionId, durationHours
+      | extend classificationReason = 'genuinely-slow'
+      | project id, name, resourceGroup, subscriptionId, durationHours,
+                classificationReason, detail = tostring(slowTypes)
+      | order by durationHours desc, name asc

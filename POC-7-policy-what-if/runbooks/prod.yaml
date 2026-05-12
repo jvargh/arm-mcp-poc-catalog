@@ -1,0 +1,26 @@
+# Scope definition for the `prod` policy what-if run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load inputs".
+
+scope: prod
+
+# Subscriptions to include in ARG queries. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# Workload grouping key. Default groups findings by Azure resource group.
+workload_key: resourceGroup
+
+# Version of the policy alias mapping in rules.yaml.
+# Increment this when alias_field_map entries are updated so run_ids reflect the change.
+policy_alias_map_version: "${policy_alias_map_version}"
+
+# Output format: "summary" (count by resource type only), "detailed" (full resource list),
+# or "csv" (full resource list exported to exports/ as CSV).
+output_format: "${output_format}"
+
+# Resource group inclusion / exclusion (case-insensitive substrings, applied after the query).
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}

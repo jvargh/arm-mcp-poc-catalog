@@ -1,0 +1,142 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "namingPrefix": {
+      "type": "string",
+      "metadata": { "description": "Short prefix for all resource names, e.g. 'gp'." }
+    },
+    "team": {
+      "type": "string",
+      "metadata": { "description": "Team slug injected into resource names, e.g. 'payments'." }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": { "description": "Azure region for all resources." }
+    },
+    "environment": {
+      "type": "string",
+      "allowedValues": ["dev", "staging", "prod"],
+      "metadata": { "description": "Deployment environment." }
+    },
+    "appServicePlanSku": {
+      "type": "string",
+      "defaultValue": "P2v3",
+      "metadata": { "description": "App Service Plan SKU." }
+    },
+    "appServicePlanCapacity": {
+      "type": "int",
+      "defaultValue": 2,
+      "minValue": 2,
+      "metadata": { "description": "Number of App Service Plan instances (min 2 for HA)." }
+    },
+    "sqlAdminLogin": {
+      "type": "string",
+      "metadata": { "description": "SQL Server administrator login name." }
+    },
+    "sqlAdminPassword": {
+      "type": "securestring",
+      "metadata": { "description": "SQL Server administrator password." }
+    }
+  },
+  "variables": {
+    "appName": "[concat(parameters('namingPrefix'), '-', parameters('team'), '-', parameters('location'), '-app')]",
+    "planName": "[concat(parameters('namingPrefix'), '-', parameters('team'), '-', parameters('location'), '-asp')]",
+    "sqlServerName": "[concat(parameters('namingPrefix'), '-', parameters('team'), '-', parameters('location'), '-sql')]",
+    "sqlDbName": "[concat(parameters('namingPrefix'), '-', parameters('team'), '-', parameters('location'), '-sqldb')]",
+    "kvName": "[concat(parameters('namingPrefix'), '-', parameters('team'), '-', parameters('location'), '-kv')]",
+    "defaultTags": {
+      "Team": "[parameters('team')]",
+      "Environment": "[parameters('environment')]",
+      "ManagedBy": "golden-path-provisioner"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2023-02-01",
+      "name": "[variables('kvName')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('defaultTags')]",
+      "properties": {
+        "sku": { "family": "A", "name": "standard" },
+        "tenantId": "[subscription().tenantId]",
+        "enableSoftDelete": true,
+        "softDeleteRetentionInDays": 90,
+        "enablePurgeProtection": true,
+        "enableRbacAuthorization": true,
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "defaultAction": "Deny"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('planName')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('defaultTags')]",
+      "sku": {
+        "name": "[parameters('appServicePlanSku')]",
+        "capacity": "[parameters('appServicePlanCapacity')]"
+      },
+      "properties": {
+        "zoneRedundant": true
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('appName')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('defaultTags')]",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
+        "httpsOnly": true,
+        "siteConfig": {
+          "minTlsVersion": "1.2",
+          "http20Enabled": true,
+          "ftpsState": "Disabled"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[variables('sqlServerName')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('defaultTags')]",
+      "properties": {
+        "administratorLogin": "[parameters('sqlAdminLogin')]",
+        "administratorLoginPassword": "[parameters('sqlAdminPassword')]",
+        "minimalTlsVersion": "1.2",
+        "publicNetworkAccess": "Disabled"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[concat(variables('sqlServerName'), '/', variables('sqlDbName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('defaultTags')]",
+      "sku": { "name": "GP_Gen5_2", "tier": "GeneralPurpose" },
+      "properties": {
+        "requestedBackupStorageRedundancy": "Geo",
+        "zoneRedundant": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('sqlServerName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "appName": { "type": "string", "value": "[variables('appName')]" },
+    "sqlServerName": { "type": "string", "value": "[variables('sqlServerName')]" },
+    "kvName": { "type": "string", "value": "[variables('kvName')]" }
+  }
+}

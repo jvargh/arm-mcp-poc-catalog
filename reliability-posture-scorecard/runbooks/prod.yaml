@@ -1,0 +1,20 @@
+# Scope definition for the `prod` scorecard run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# Workload grouping key. Default groups findings by Azure resource group.
+# Set to a tag name (e.g. "App") to group by tag value instead.
+workload_key: resourceGroup
+
+# Resource group inclusion / exclusion (case-insensitive substrings, applied after the query).
+# Acts as an allow-list: only RGs matching one of these names are scored.
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}

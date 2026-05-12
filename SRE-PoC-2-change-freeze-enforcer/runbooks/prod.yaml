@@ -1,0 +1,33 @@
+# Scope definition for the `prod` change-freeze enforcer run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries.
+subscriptions: ["${subscription_id}"]
+
+# Freeze windows: each entry defines a period during which deployments are blocked
+# for the listed scopes. Add as many windows as needed.
+# severity values: critical | high | medium | low
+freeze_windows:
+  - start_utc: "${freeze_window_1_start}"
+    end_utc: "${freeze_window_1_end}"
+    scopes: ${freeze_window_1_scopes}
+    severity: "${freeze_window_1_severity}"
+
+# Fields that the operator MUST supply when using the `override` verb (break-glass).
+# These are written verbatim to the override audit log.
+break_glass_required_fields:
+  - cr_id
+  - justification
+
+# Tag key/value that marks a resource group or resource as exempt from the freeze.
+# If any resource in target_scope carries this tag with this exact value, the deploy is
+# allowed to proceed even during an active freeze window.
+exempt_tags:
+  key: freeze-exempt
+  value: "true"

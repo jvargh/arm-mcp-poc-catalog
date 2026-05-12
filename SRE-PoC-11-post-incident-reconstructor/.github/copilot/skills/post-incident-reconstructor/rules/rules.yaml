@@ -1,0 +1,115 @@
+# Post-Incident Reconstructor — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, kql, skip_if_unavailable (optional).
+# kql MUST use ${start_utc} and ${end_utc} for the incident time window.
+# kql MUST return columns: id, name, resourceGroup, subscriptionId, timestamp,
+#   principal, action, deployment_id.
+
+version: 1
+
+rules:
+  - id: R001
+    title: ARM deployments in incident time window
+    severity: high
+    skip_if_unavailable: false
+    kql: |
+      Resources
+      | where type =~ 'microsoft.resources/deployments'
+      | extend deploymentTimestamp = todatetime(properties.timestamp)
+      | where deploymentTimestamp >= datetime('${start_utc}')
+            and deploymentTimestamp <= datetime('${end_utc}')
+      | extend principal = tostring(properties.properties.changedBy)
+      | project
+          id,
+          name,
+          resourceGroup,
+          subscriptionId,
+          timestamp = deploymentTimestamp,
+          principal = iff(isempty(principal), 'unknown', principal),
+          action = 'deployed',
+          deployment_id = name,
+          provisioningState = tostring(properties.provisioningState)
+      | order by timestamp asc, name asc
+
+  - id: R002
+    title: Resource property changes in incident time window
+    severity: high
+    skip_if_unavailable: true
+    kql: |
+      resourcechanges
+      | where changeTime >= datetime('${start_utc}')
+            and changeTime <= datetime('${end_utc}')
+      | extend rg = tostring(resourceGroup)
+      | extend shortName = tostring(split(resourceId, '/')[-1])
+      | extend correlatedDeployment = tostring(correlationId)
+      | project
+          id = resourceId,
+          name = shortName,
+          resourceGroup = rg,
+          subscriptionId,
+          timestamp = changeTime,
+          principal = iff(isempty(tostring(changedByCorrelationId)), 'unknown', tostring(changedByCorrelationId)),
+          action = tostring(changeType),
+          deployment_id = iff(isempty(correlatedDeployment), 'n/a', correlatedDeployment)
+      | order by timestamp asc, name asc
+
+  - id: R003
+    title: RBAC role assignment changes in incident time window
+    severity: medium
+    skip_if_unavailable: true
+    kql: |
+      authorizationresources
+      | where type =~ 'microsoft.authorization/roleassignments'
+      | extend createdOn = todatetime(properties.createdOn)
+      | where createdOn >= datetime('${start_utc}')
+            and createdOn <= datetime('${end_utc}')
+      | extend principalId = tostring(properties.principalId)
+      | extend roleDefId  = tostring(split(tostring(properties.roleDefinitionId), '/')[-1])
+      | project
+          id,
+          name,
+          resourceGroup,
+          subscriptionId,
+          timestamp = createdOn,
+          principal = iff(isempty(principalId), 'unknown', principalId),
+          action = 'role-assigned',
+          deployment_id = 'n/a',
+          roleDefinitionId = roleDefId,
+          principalType = tostring(properties.principalType)
+      | order by timestamp asc, name asc
+
+  - id: R004
+    title: Correlate deployment IDs with resource changes
+    severity: medium
+    skip_if_unavailable: false
+    kql: |
+      Resources
+      | where type =~ 'microsoft.resources/deployments'
+      | extend deploymentTimestamp = todatetime(properties.timestamp)
+      | where deploymentTimestamp >= datetime('${start_utc}')
+            and deploymentTimestamp <= datetime('${end_utc}')
+      | extend correlationId = tostring(properties.correlationId)
+      | project deploymentName = name, resourceGroup, subscriptionId,
+                deploymentTimestamp, correlationId,
+                provisioningState = tostring(properties.provisioningState)
+      | join kind=leftouter (
+            resourcechanges
+            | extend correlationId = tostring(correlationId)
+            | extend shortName = tostring(split(resourceId, '/')[-1])
+            | project resourceId, changeTime, changeType, correlationId,
+                      changedResourceName = shortName
+        ) on correlationId
+      | project
+          id = deploymentName,
+          name = deploymentName,
+          resourceGroup,
+          subscriptionId,
+          timestamp = deploymentTimestamp,
+          principal = 'unknown',
+          action = 'correlated-change',
+          deployment_id = deploymentName,
+          resourceId,
+          changeTime,
+          changeType,
+          changedResourceName
+      | order by timestamp asc, name asc

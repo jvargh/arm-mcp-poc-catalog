@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "targetResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Full resource ID of the resource to enable diagnostics on."
+      }
+    },
+    "workspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Full resource ID of the destination Log Analytics workspace."
+      }
+    },
+    "settingName": {
+      "type": "string",
+      "defaultValue": "cleanup-poc12-diag"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "name": "[parameters('settingName')]",
+      "scope": "[parameters('targetResourceId')]",
+      "properties": {
+        "workspaceId": "[parameters('workspaceId')]",
+        "logs": [
+          { "categoryGroup": "allLogs", "enabled": true }
+        ],
+        "metrics": [
+          { "category": "AllMetrics", "enabled": true }
+        ]
+      }
+    }
+  ]
+}

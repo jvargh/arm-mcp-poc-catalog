@@ -1,0 +1,83 @@
+# Capacity & Quota Guardian — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, resource_type, kql, vcpu_per_sku (R002 only).
+# kql MUST return columns: subscriptionId, location (region), resource_type, sku (if applicable), current_count.
+# Quota LIMITS are NOT in ARG — they are stored in runbooks/prod.yaml under quota_limits.
+
+version: 1
+
+rules:
+  - id: R001
+    title: Virtual Machine count by SKU per region
+    resource_type: virtual_machines
+    description: >
+      Count deployed VMs grouped by VM SKU (hardware profile size) and region.
+      Used to check per-SKU VM count against quota limits.
+    kql: |
+      Resources
+      | where type =~ 'microsoft.compute/virtualmachines'
+      | extend sku = tostring(properties.hardwareProfile.vmSize)
+      | summarize current_count = count() by sku, location, subscriptionId
+      | extend resource_type = 'virtual_machines'
+      | project subscriptionId, location, resource_type, sku, current_count
+
+  - id: R002
+    title: vCPU count per region
+    resource_type: vcores
+    description: >
+      Count total vCPUs consumed per region by multiplying VM count per SKU by the
+      known vCPU count for that SKU (vcpu_per_sku map below). Used to check regional
+      vCPU quota. NOTE: ARG does not store vCPU-per-SKU — the map is hardcoded here
+      and must be kept in sync with actual Azure SKU definitions.
+    vcpu_per_sku:
+      Standard_B2s: 2
+      Standard_B4ms: 4
+      Standard_B8ms: 8
+      Standard_D2s_v3: 2
+      Standard_D4s_v3: 4
+      Standard_D8s_v3: 8
+      Standard_D16s_v3: 16
+      Standard_D32s_v3: 32
+      Standard_D2s_v5: 2
+      Standard_D4s_v5: 4
+      Standard_D8s_v5: 8
+      Standard_E2s_v3: 2
+      Standard_E4s_v3: 4
+      Standard_E8s_v3: 8
+      Standard_F2s_v2: 2
+      Standard_F4s_v2: 4
+      Standard_F8s_v2: 8
+      Standard_F16s_v2: 16
+      _default: 4  # fallback for unknown SKUs; operator must update
+    kql: |
+      Resources
+      | where type =~ 'microsoft.compute/virtualmachines'
+      | extend sku = tostring(properties.hardwareProfile.vmSize)
+      | summarize vm_count = count() by sku, location, subscriptionId
+      | project subscriptionId, location, sku, vm_count
+
+  - id: R003
+    title: Storage account count per subscription
+    resource_type: storage_accounts
+    description: >
+      Count total storage accounts per subscription. Azure enforces a per-subscription
+      limit (default 250). Limit stored in quota_limits.storage_accounts in the runbook.
+    kql: |
+      Resources
+      | where type =~ 'microsoft.storage/storageaccounts'
+      | summarize current_count = count() by subscriptionId
+      | extend resource_type = 'storage_accounts', location = 'subscription-scoped', sku = ''
+      | project subscriptionId, location, resource_type, sku, current_count
+
+  - id: R004
+    title: Public IP address count per region
+    resource_type: public_ip_addresses
+    description: >
+      Count public IP addresses (both static and dynamic) per region.
+      Used to check against regional public IP quota limits.
+    kql: |
+      Resources
+      | where type =~ 'microsoft.network/publicipaddresses'
+      | summarize current_count = count() by location, subscriptionId
+      | extend resource_type = 'public_ip_addresses', sku = ''
+      | project subscriptionId, location, resource_type, sku, current_count

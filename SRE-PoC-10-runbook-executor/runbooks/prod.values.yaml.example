@@ -1,0 +1,23 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+
+# Azure region where primary workload runs (the region experiencing issues).
+primary_region: "eastus"
+
+# Azure region to fail over to (the standby region).
+failover_region: "westus2"
+
+# Azure Traffic Manager profile name that controls routing between regions.
+traffic_manager_profile: "<your-traffic-manager-profile-name>"
+
+# Resource group containing the Traffic Manager profile.
+traffic_manager_rg: "<your-traffic-manager-resource-group>"
+
+# Traffic Manager endpoint name for the primary region.
+primary_endpoint_name: "<primary-endpoint-name>"
+
+# Traffic Manager endpoint name for the failover region.
+failover_endpoint_name: "<failover-endpoint-name>"

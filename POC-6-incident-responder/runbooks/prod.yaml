@@ -1,0 +1,25 @@
+# Scope definition for the `prod` incident-responder run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# Resource group inclusion / exclusion (case-insensitive substrings, applied after the query).
+# Acts as an allow-list: only RGs matching one of these names are included.
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}
+
+# How far back to look for resource changes and RBAC changes.
+# Substituted into the ${time_window_hours} token in rules R001 and R003 KQL.
+default_time_window_hours: 2
+
+# Named incident scopes — optional shorthand aliases to narrow the blast-radius query.
+# Each entry is a list of resource group name substrings.
+# Example: "payments" will filter to all RGs whose name contains "payments".
+incident_scopes: ${incident_scopes}

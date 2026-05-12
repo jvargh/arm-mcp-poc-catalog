@@ -1,0 +1,18 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+
+rg_include:
+  - "<rg-name-1>"
+  - "<rg-name-2>"
+
+rg_exclude: []
+
+# Optional: tag filter for crown-jewel candidates.
+# Only resources with at least one of these tag key=value pairs will appear
+# in the crown-jewels table. Leave as empty list [] to score all resources.
+crown_jewel_tags:
+  - "Criticality=High"
+  - "Environment=Production"

@@ -1,0 +1,18 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+
+# Path to the audit log file (relative to workspace root or absolute).
+# The file will be created if it does not exist; lines are appended.
+audit_log_path: "exports/audit.log"
+
+# Rule IDs from rules.yaml that users are permitted to query.
+# Remove any category to block it. Order does not matter.
+allowed_question_categories:
+  - R001   # Count resources by type
+  - R002   # Count resources by region
+  - R003   # List resources by tag
+  - R004   # SQL databases by tier
+  - R005   # Resource count by subscription

@@ -1,0 +1,114 @@
+# Policy What-If — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+#
+# Each rule maps a category of Azure Policy aliases to ARG field paths and defines
+# a KQL TEMPLATE with {{alias_field}} and {{alias_value}} placeholders.
+#
+# At runtime the agent substitutes:
+#   {{alias_field}}  — the ARG property path resolved from the policy alias
+#                      (e.g., tags.Owner, properties.hardwareProfile.vmSize)
+#   {{alias_value}}  — the required value from the policy condition, OR the
+#                      sentinel __EXISTS__ when the policy checks field existence.
+#
+# Supported alias short-names (policy alias → ARG field path):
+#   sku         → properties.hardwareProfile.vmSize (VMs)
+#                  sku.name (VMSS, storage)
+#   location    → location (universal ARG column)
+#   tags        → tags.<TagName>  (e.g., tags['Owner'] → tags.Owner)
+#   networkAcls → properties.networkAcls.defaultAction (storage / Key Vault)
+#
+# Unsupported aliases: agent emits STATUS=UNSUPPORTED ALIAS=<name> and continues.
+#
+# KQL MUST return columns `id` and `resourceGroup` at minimum.
+
+version: 1
+
+rules:
+  - id: R001
+    title: Compute policy aliases — VM SKU, size, and tag compliance
+    severity: high
+    weight: 12
+    category: compute
+    alias: sku
+    alias_field_map:
+      sku: properties.hardwareProfile.vmSize
+      tags: tags
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.compute/virtualmachines'
+      | where ('{{alias_value}}' == '__EXISTS__'
+                and (isnull({{alias_field}}) or tostring({{alias_field}}) == ''))
+             or ('{{alias_value}}' != '__EXISTS__'
+                and tostring({{alias_field}}) !~ '{{alias_value}}')
+      | project id, name, resourceGroup, subscriptionId, location, type,
+          ownerTag=tostring(tags.Owner),
+          currentAliasValue=tostring({{alias_field}})
+
+  - id: R002
+    title: Network policy aliases — NSG, VNet, and networkAcls compliance
+    severity: high
+    weight: 10
+    category: network
+    alias: networkAcls
+    alias_field_map:
+      networkAcls: properties.networkAcls.defaultAction
+      location: location
+    remediation_template: null
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.network/networksecuritygroups',
+          'microsoft.network/virtualnetworks',
+          'microsoft.network/applicationgateways',
+          'microsoft.network/loadbalancers',
+          'microsoft.keyvault/vaults'
+        )
+      | where ('{{alias_value}}' == '__EXISTS__'
+                and (isnull({{alias_field}}) or tostring({{alias_field}}) == ''))
+             or ('{{alias_value}}' != '__EXISTS__'
+                and tostring({{alias_field}}) !~ '{{alias_value}}')
+      | project id, name, resourceGroup, subscriptionId, location, type,
+          ownerTag=tostring(tags.Owner),
+          currentAliasValue=tostring({{alias_field}})
+
+  - id: R003
+    title: Storage policy aliases — location, SKU, and networkAcls compliance
+    severity: medium
+    weight: 8
+    category: storage
+    alias: location
+    alias_field_map:
+      location: location
+      networkAcls: properties.networkAcls.defaultAction
+      sku: sku.name
+      tags: tags
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.storage/storageaccounts'
+      | where ('{{alias_value}}' == '__EXISTS__'
+                and (isnull({{alias_field}}) or tostring({{alias_field}}) == ''))
+             or ('{{alias_value}}' != '__EXISTS__'
+                and tostring({{alias_field}}) !~ '{{alias_value}}')
+      | project id, name, resourceGroup, subscriptionId, location, type,
+          ownerTag=tostring(tags.Owner),
+          currentAliasValue=tostring({{alias_field}})
+
+  - id: R004
+    title: Generic policy alias — catch-all for less common aliases
+    severity: medium
+    weight: 6
+    category: generic
+    alias: "*"
+    alias_field_map: {}
+    remediation_template: null
+    kql: |
+      Resources
+      | where ('{{alias_value}}' == '__EXISTS__'
+                and (isnull({{alias_field}}) or tostring({{alias_field}}) == ''))
+             or ('{{alias_value}}' != '__EXISTS__'
+                and tostring({{alias_field}}) !~ '{{alias_value}}')
+      | project id, name, resourceGroup, subscriptionId, type, location,
+          ownerTag=tostring(tags.Owner),
+          currentAliasValue=tostring({{alias_field}})

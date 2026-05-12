@@ -1,0 +1,22 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+
+rg_include:
+  - "<rg-name-1>"
+  - "<rg-name-2>"
+
+rg_exclude: []
+
+# The resource group to deploy into (used by the deploy verb).
+deployment_target_rg: "<target-rg-for-deployment>"
+
+# Quota limits for R005 — keep in sync with `az vm list-usage --location <loc>`.
+# Set to 0 to skip quota checks (R005 will SKIP).
+quota_limits:
+  vm_cores_per_region: 100
+  public_ip_addresses: 50
+  network_interfaces: 200
+  storage_accounts: 250

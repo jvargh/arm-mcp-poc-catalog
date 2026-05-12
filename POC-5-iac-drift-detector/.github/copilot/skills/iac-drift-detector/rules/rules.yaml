@@ -1,0 +1,108 @@
+# IaC Drift Detector — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, weight, category, resource_type, diff_fields, kql.
+# kql MUST return columns `id`, `name`, and `resourceGroup` at minimum.
+# Scope tokens substituted at runtime (string replace only):
+#   ${subscriptions_filter}     — comma-separated quoted sub IDs
+#   ${rg_filter}                — KQL where clause for rg_include list (or empty string)
+#   ${resource_names_filter}    — KQL where clause filtering by template resource names
+
+version: 1
+
+rules:
+  - id: R001
+    title: NSG security rule drift
+    severity: high
+    weight: 12
+    category: network-config
+    resource_type: microsoft.network/networksecuritygroups
+    diff_fields:
+      - properties.securityRules
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.network/networksecuritygroups'
+      | where subscriptionId in~ (${subscriptions_filter})
+      ${rg_filter}
+      ${resource_names_filter}
+      | project id, name, resourceGroup, subscriptionId, location,
+          securityRules = properties.securityRules
+
+  - id: R002
+    title: VM SKU / size drift
+    severity: high
+    weight: 10
+    category: compute-config
+    resource_type: microsoft.compute/virtualmachines
+    diff_fields:
+      - properties.hardwareProfile.vmSize
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.compute/virtualmachines'
+      | where subscriptionId in~ (${subscriptions_filter})
+      ${rg_filter}
+      ${resource_names_filter}
+      | project id, name, resourceGroup, subscriptionId, location,
+          vmSize = tostring(properties.hardwareProfile.vmSize)
+
+  - id: R003
+    title: Storage account SKU and network ACL drift
+    severity: high
+    weight: 10
+    category: storage-config
+    resource_type: microsoft.storage/storageaccounts
+    diff_fields:
+      - sku.name
+      - properties.networkAcls.bypass
+      - properties.networkAcls.defaultAction
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.storage/storageaccounts'
+      | where subscriptionId in~ (${subscriptions_filter})
+      ${rg_filter}
+      ${resource_names_filter}
+      | project id, name, resourceGroup, subscriptionId, location,
+          skuName = tostring(sku.name),
+          networkAclsBypass = tostring(properties.networkAcls.bypass),
+          networkAclsDefaultAction = tostring(properties.networkAcls.defaultAction)
+
+  - id: R004
+    title: Key Vault access policy drift
+    severity: critical
+    weight: 14
+    category: security-config
+    resource_type: microsoft.keyvault/vaults
+    diff_fields:
+      - properties.accessPolicies
+      - properties.enableSoftDelete
+      - properties.enablePurgeProtection
+    remediation_template: null
+    kql: |
+      Resources
+      | where type =~ 'microsoft.keyvault/vaults'
+      | where subscriptionId in~ (${subscriptions_filter})
+      ${rg_filter}
+      ${resource_names_filter}
+      | project id, name, resourceGroup, subscriptionId, location,
+          accessPolicies = properties.accessPolicies,
+          enableSoftDelete = tobool(properties.enableSoftDelete),
+          enablePurgeProtection = tobool(properties.enablePurgeProtection)
+
+  - id: R005
+    title: Generic resource property drift (catch-all)
+    severity: medium
+    weight: 6
+    category: generic-config
+    resource_type: null
+    diff_fields:
+      - properties
+    remediation_template: null
+    kql: |
+      Resources
+      | where type in~ (${subscriptions_filter_types})
+      | where subscriptionId in~ (${subscriptions_filter})
+      ${rg_filter}
+      ${resource_names_filter}
+      | project id, name, resourceGroup, subscriptionId, type, location, properties

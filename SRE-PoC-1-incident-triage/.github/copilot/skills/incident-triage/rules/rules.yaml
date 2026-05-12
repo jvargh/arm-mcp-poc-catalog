@@ -1,0 +1,75 @@
+# SRE-PoC-1 — "First 60 Seconds" Incident Triage Rules
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, table, skip_if_unavailable, kql.
+# KQL placeholders: {subscription_id}, {time_window_hours} — substituted by
+# SKILL.md Step 1 before any tool call. All numeric values are integers.
+
+version: 1
+
+rules:
+  - id: R001
+    title: Resource changes in time window
+    description: >
+      Returns resources changed within the triage time window — resource id,
+      changeType, initiating principal, and correlationId for cross-referencing.
+    table: resourcechanges
+    skip_if_unavailable: true
+    kql: |
+      resourcechanges
+      | where todatetime(properties.changeAttributes.timestamp)
+              > ago({time_window_hours}h)
+      | where subscriptionId =~ '{subscription_id}'
+      | extend
+          changeType    = tostring(properties.changeType),
+          resourceId    = tostring(properties.targetResourceId),
+          principal     = tostring(
+                            properties.changeAttributes.initiatedBy),
+          correlationId = tostring(
+                            properties.changeAttributes.correlationId),
+          changedAt     = todatetime(
+                            properties.changeAttributes.timestamp)
+      | project changedAt, changeType, resourceId, principal, correlationId
+      | order by changedAt desc
+
+  - id: R002
+    title: In-flight ARM deployments
+    description: >
+      Lists ARM deployments currently in Running state within the scope.
+      Each row is passed to get_arm_template_deployment_status for live
+      status confirmation before presenting to the operator.
+    table: resources
+    skip_if_unavailable: false
+    kql: |
+      Resources
+      | where type =~ 'microsoft.resources/deployments'
+      | where tostring(properties.provisioningState) =~ 'Running'
+      | where subscriptionId =~ '{subscription_id}'
+      | extend
+          startTime     = todatetime(properties.timestamp),
+          correlationId = tostring(properties.correlationId)
+      | project id, name, resourceGroup, subscriptionId,
+                startTime, correlationId
+      | order by startTime desc
+
+  - id: R003
+    title: Recent RBAC role assignment changes
+    description: >
+      Returns role assignments created within the time window, flagging
+      potential privilege escalation. Uses properties.createdOn for the
+      time filter; skip_if_unavailable handles subscriptions where the
+      authorizationresources table is not enabled.
+    table: authorizationresources
+    skip_if_unavailable: true
+    kql: |
+      authorizationresources
+      | where type =~ 'microsoft.authorization/roleassignments'
+      | where subscriptionId =~ '{subscription_id}'
+      | extend
+          principalId = tostring(properties.principalId),
+          roleDefId   = tostring(properties.roleDefinitionId),
+          scope       = tostring(properties.scope),
+          createdOn   = todatetime(properties.createdOn)
+      | where createdOn > ago({time_window_hours}h)
+      | project id, name, resourceGroup, subscriptionId,
+                principalId, roleDefId, scope, createdOn
+      | order by createdOn desc

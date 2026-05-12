@@ -1,0 +1,15 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+#
+# Usage:
+#   Copy-Item runbooks/prod.values.yaml.example runbooks/prod.values.yaml
+#   Then edit prod.values.yaml with real values.
+
+subscription_id: "<your-subscription-guid-here>"
+
+# Triage scopes: list of resource-group name substrings (case-insensitive)
+# to limit the triage blast radius. Empty list = all RGs in the subscription.
+triage_scopes:
+  - "<rg-prefix-or-name-1>"
+  - "<rg-prefix-or-name-2>"

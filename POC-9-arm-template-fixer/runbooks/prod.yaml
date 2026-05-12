@@ -1,0 +1,39 @@
+# Runbook for the `prod` ARM Template Fixer scope.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Target subscription and resource group for the template deployment.
+subscription_id: "${subscription_id}"
+resource_group: "${resource_group}"
+
+# Maximum number of fix-and-redeploy attempts before halting with STATUS=EXHAUSTED.
+# Ratification #3 binding: v1 never calls create_template_deployment; this counter
+# bounds the simulated loop.
+max_retries: 3
+
+# Resource types whose deletion or full replacement must trigger an immediate halt.
+# The agent checks the proposed template diff against this list before each retry.
+# Operators: add any resource type that is considered irreversible or high-blast-radius.
+destructive_change_types:
+  - Microsoft.KeyVault/vaults
+  - Microsoft.Sql/servers
+  - Microsoft.Storage/storageAccounts
+  - Microsoft.Network/virtualNetworks
+  - Microsoft.Compute/virtualMachines
+
+# Fix patterns that the agent is permitted to apply automatically.
+# Any fix_pattern from rules.yaml not in this list must be skipped with a warning.
+allowed_fix_patterns:
+  - add dependsOn
+  - suggest valid SKU
+  - suggest smaller SKU/region
+  - switch to incremental
+
+# Deployment mode used for all redeploy attempts.
+# Incremental is the safe default; Complete mode is disallowed in v1.
+deployment_mode: Incremental

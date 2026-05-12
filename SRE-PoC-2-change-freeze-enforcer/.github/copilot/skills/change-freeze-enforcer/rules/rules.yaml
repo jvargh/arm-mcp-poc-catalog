@@ -1,0 +1,72 @@
+# Change-Freeze Enforcer — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+#
+# Rules:
+#   R001 — Resolve template target scope
+#   R002 — Check freeze window active (time-based; KQL retrieves lock evidence; time comparison is in-agent)
+#   R003 — Check scope overlap with frozen scopes
+#   R004 — Validate exemption tag presence
+#
+# KQL is PRE-DEFINED VERBATIM. The agent MUST NOT derive or generate KQL at run time.
+# All queries pass `subscriptions` as a parameter to validate_query / execute_query.
+# Client-side scope filtering (rg_include / rg_exclude) applied AFTER execute_query returns.
+#
+# DETERMINISM NOTE (per ratifications): generate_query is NOT in the tool allowlist.
+# Every kql field below is a complete, literal ARG query.
+
+version: 1
+
+rules:
+  - id: R001
+    title: Resolve template target scope
+    description: >
+      Confirms the deployment target resource group exists within the declared subscription
+      scope. Returns all resource groups so the agent can resolve the target_scope string
+      against live Azure data. A missing target_scope in the result set causes an abort.
+    kql: |
+      ResourceContainers
+      | where type =~ 'microsoft.resources/subscriptions/resourcegroups'
+      | project id, name, subscriptionId, location, tags
+      | order by name asc
+
+  - id: R002
+    title: Check freeze window active
+    description: >
+      Retrieves any Azure management locks present in the subscription (these may be placed
+      by ops teams to signal freeze periods). The actual time-window comparison is performed
+      by the agent in memory against the runbook freeze_windows list — this KQL provides
+      supplementary evidence only. A lock named 'ChangeFreeze' or 'FreezeWindow' is treated
+      as additional corroboration but does not override the time-based decision.
+    kql: |
+      Resources
+      | where type =~ 'microsoft.authorization/locks'
+      | project id, name, resourceGroup, subscriptionId, type,
+               lock_level=tostring(properties.level),
+               notes=tostring(properties.notes)
+      | order by name asc
+
+  - id: R003
+    title: Check scope overlap with frozen scopes
+    description: >
+      Lists all resource groups in the subscription so the agent can cross-reference the
+      target_scope and the runbook freeze_windows[].scopes[] lists. The agent performs the
+      overlap check (case-insensitive substring) in memory against the rows returned here.
+    kql: |
+      ResourceContainers
+      | where type =~ 'microsoft.resources/subscriptions/resourcegroups'
+      | project id, name, subscriptionId, location
+      | order by name asc
+
+  - id: R004
+    title: Validate exemption tag presence
+    description: >
+      Identifies resources and resource groups carrying the freeze-exemption tag
+      (key: 'freeze-exempt', value: 'true'). If any resource in the target_scope carries
+      this tag, the scope is treated as exempt and the deployment is allowed to proceed
+      even during an active freeze window.
+    kql: |
+      Resources
+      | where isnotempty(tags['freeze-exempt'])
+      | project id, name, type, resourceGroup, subscriptionId, location,
+               exempt_value=tostring(tags['freeze-exempt'])
+      | order by resourceGroup asc, name asc

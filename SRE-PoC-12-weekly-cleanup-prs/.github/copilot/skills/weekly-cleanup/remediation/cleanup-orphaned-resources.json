@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Full resource ID of the orphaned resource to tag for cleanup review."
+      }
+    },
+    "ownerTag": {
+      "type": "string",
+      "defaultValue": "cleanup-pending",
+      "metadata": {
+        "description": "Value to set on the Owner tag. Default marks the resource for cleanup review."
+      }
+    },
+    "costCenterTag": {
+      "type": "string",
+      "defaultValue": "unallocated",
+      "metadata": {
+        "description": "Value to set on the CostCenter tag."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/tags",
+      "apiVersion": "2021-04-01",
+      "name": "default",
+      "scope": "[parameters('resourceId')]",
+      "properties": {
+        "tags": {
+          "Owner": "[parameters('ownerTag')]",
+          "CostCenter": "[parameters('costCenterTag')]",
+          "cleanup-proposed-by": "SRE-PoC-12-weekly-cleanup",
+          "cleanup-proposed-date": "[utcNow('yyyy-MM-dd')]"
+        }
+      }
+    }
+  ]
+}

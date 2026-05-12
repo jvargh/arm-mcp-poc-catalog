@@ -1,0 +1,52 @@
+# Scope definition for the `prod` SLO deployment gate run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries.
+subscriptions: ["${subscription_id}"]
+
+# Resource group inclusion / exclusion (case-insensitive substrings).
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}
+
+# SLO target definitions, one entry per service.
+# budget_threshold_pct: if remaining budget ≤ this value the gate BLOCKs.
+# window_days: the SLO measurement window in days.
+# approval_required_below_pct: if budget is below this value, approval is required.
+# simulated_budget_pct: v1 only — hardcoded test value; replace with live integration.
+#
+# operator must keep slo_targets in sync with your SLO platform.
+slo_targets:
+  payments-api:
+    budget_threshold_pct: 50.0
+    window_days: 30
+    approval_required_below_pct: 75.0
+    simulated_budget_pct: 72.4          # v1 test value — above threshold → ALLOW
+
+  checkout-api:
+    budget_threshold_pct: 50.0
+    window_days: 30
+    approval_required_below_pct: 75.0
+    simulated_budget_pct: 18.2          # v1 test value — below threshold → BLOCK
+
+  auth-service:
+    budget_threshold_pct: 20.0
+    window_days: 30
+    approval_required_below_pct: 40.0
+    simulated_budget_pct: 55.3          # v1 test value — above threshold → ALLOW
+
+# Source for budget values in production:
+# azure_monitor | prometheus | external
+# In v1 this is ignored; simulated_budget_pct is always used.
+budget_source: azure_monitor
+
+# Minutes to wait for operator approval before auto-deny (BLOCK TIMEOUT).
+approval_timeout_minutes: 30
+
+# If true, any active incident (R003) forces BLOCK regardless of budget.
+block_on_active_incident: true

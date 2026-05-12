@@ -1,0 +1,117 @@
+# Pre-deploy Blast Radius Analyzer — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, weight, category, kql (and optionally skip_if_unavailable).
+# weight contributes to total_risk_score when at least one resource is flagged.
+# kql MUST return columns: id, name, resourceGroup, subscriptionId (plus any extras noted per rule).
+# Rules R001–R004 identify replace-sensitive / delete-risky / modify-risky / create-candidate types.
+# Rules R005–R006 are supplemental cross-cutting checks.
+
+version: 1
+
+rules:
+  - id: R001
+    title: Replace-sensitive resource types (immutable-property changes require recreation)
+    severity: critical
+    weight: 15
+    category: replace-risk
+    skip_if_unavailable: false
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.compute/virtualmachines',
+          'microsoft.compute/disks',
+          'microsoft.containerservice/managedclusters',
+          'microsoft.sql/servers',
+          'microsoft.network/virtualnetworkgateways',
+          'microsoft.network/virtualnetworks',
+          'microsoft.recoveryservices/vaults'
+        )
+      | project id, name, resourceGroup, subscriptionId, location, type
+
+  - id: R002
+    title: Modify-risky resource types (config changes propagate to consumers)
+    severity: high
+    weight: 10
+    category: modify-risk
+    skip_if_unavailable: false
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.web/sites',
+          'microsoft.web/serverfarms',
+          'microsoft.network/loadbalancers',
+          'microsoft.network/applicationgateways',
+          'microsoft.storage/storageaccounts',
+          'microsoft.keyvault/vaults',
+          'microsoft.servicebus/namespaces',
+          'microsoft.eventhub/namespaces'
+        )
+      | project id, name, resourceGroup, subscriptionId, location, type
+
+  - id: R003
+    title: Create-candidate resource types (new additions; check naming and quota)
+    severity: low
+    weight: 2
+    category: create-risk
+    skip_if_unavailable: false
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.storage/storageaccounts',
+          'microsoft.keyvault/vaults',
+          'microsoft.containerregistry/registries',
+          'microsoft.web/sites',
+          'microsoft.compute/virtualmachines',
+          'microsoft.network/virtualnetworks'
+        )
+      | project id, name, resourceGroup, subscriptionId, location, type
+
+  - id: R004
+    title: Delete-risky resource types (removal breaks downstream consumers)
+    severity: critical
+    weight: 15
+    category: delete-risk
+    skip_if_unavailable: false
+    kql: |
+      Resources
+      | where type in~ (
+          'microsoft.network/virtualnetworks',
+          'microsoft.network/networksecuritygroups',
+          'microsoft.network/routetables',
+          'microsoft.storage/storageaccounts',
+          'microsoft.keyvault/vaults',
+          'microsoft.compute/availabilitysets',
+          'microsoft.recoveryservices/vaults'
+        )
+      | project id, name, resourceGroup, subscriptionId, location, type
+
+  - id: R005
+    title: Policy violations on in-scope resources
+    severity: high
+    weight: 12
+    category: policy
+    skip_if_unavailable: true
+    kql: |
+      PolicyResources
+      | where type =~ 'microsoft.policyinsights/policystates/latest'
+      | where properties.complianceState =~ 'NonCompliant'
+      | project id,
+                name        = tostring(properties.resourceId),
+                resourceGroup,
+                subscriptionId,
+                policyName  = tostring(properties.policyDefinitionName)
+
+  - id: R006
+    title: Dependency fan-out — shared platform resources referenced by multiple consumers
+    severity: medium
+    weight: 8
+    category: fan-out
+    skip_if_unavailable: false
+    kql: |
+      Resources
+      | where type =~ 'microsoft.network/virtualnetworks'
+      | extend subnetCount   = array_length(properties.subnets)
+      | extend peeringCount  = array_length(properties.virtualNetworkPeerings)
+      | extend fanOutScore   = subnetCount + peeringCount
+      | where fanOutScore >= 3
+      | project id, name, resourceGroup, subscriptionId, location, subnetCount, peeringCount, fanOutScore

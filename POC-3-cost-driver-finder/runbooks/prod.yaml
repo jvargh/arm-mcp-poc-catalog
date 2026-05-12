@@ -1,0 +1,31 @@
+# Scope definition for the `prod` cost-driver-finder run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# Workload grouping key. Default groups findings by Azure resource group.
+workload_key: resourceGroup
+
+# Resource group inclusion / exclusion (case-insensitive substrings, applied after the query).
+# Acts as an allow-list: only RGs matching one of these names are included.
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}
+
+# PoC-specific keys below this line
+
+# Number of days to look back for new/modified resources. Default: 30.
+time_window_days: ${time_window_days}
+
+# Azure region to filter resources by (e.g. eastus2, westus2, northeurope).
+target_region: ${target_region}
+
+# Optional: USD threshold for future Azure Cost Management handoff.
+# Leave unset (or set to null) to skip the Cost Management block.
+cost_threshold_usd: ${cost_threshold_usd}

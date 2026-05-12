@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "targetResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Full resource ID of the resource to patch tags on (e.g. /subscriptions/.../resourceGroups/.../providers/...)."
+      }
+    },
+    "tagName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the tag to apply (e.g. CostCenter, Owner, Environment, DataClassification)."
+      }
+    },
+    "tagValue": {
+      "type": "string",
+      "metadata": {
+        "description": "Value to set for the tag. Sourced from runbook default_tag_values or operator input."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/tags",
+      "apiVersion": "2021-04-01",
+      "name": "default",
+      "scope": "[parameters('targetResourceId')]",
+      "properties": {
+        "tags": {
+          "[parameters('tagName')]": "[parameters('tagValue')]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "patchedResourceId": {
+      "type": "string",
+      "value": "[parameters('targetResourceId')]"
+    },
+    "appliedTagName": {
+      "type": "string",
+      "value": "[parameters('tagName')]"
+    },
+    "appliedTagValue": {
+      "type": "string",
+      "value": "[parameters('tagValue')]"
+    }
+  }
+}

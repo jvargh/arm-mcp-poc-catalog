@@ -1,0 +1,30 @@
+# Scope definition for the `prod` post-incident reconstruct run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# Incident time window — both values are required.
+# The skill injects these into every KQL as ${start_utc} / ${end_utc}.
+incident_time_window:
+  start_utc: "${incident_start_utc}"
+  end_utc:   "${incident_end_utc}"
+
+# Incident scope: one of "subscription", "resourceGroup", or a tag filter string.
+# "subscription" = entire subscription; "resourceGroup" = filter by rg_include list.
+incident_scope: "${incident_scope}"
+
+# Resource group filters (case-insensitive substring match).
+# Used when incident_scope == "resourceGroup".
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}
+
+# Postmortem template format.
+# "standard" = the default team postmortem markdown template.
+postmortem_template_format: "${postmortem_template_format}"

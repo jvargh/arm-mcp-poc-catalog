@@ -1,0 +1,17 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+resource_group: "<target-resource-group-name>"
+
+deployment_name: "<arm-deployment-name>"
+template_file: "<relative-path-to-new-template.json>"
+parameters_file: "<relative-path-to-new-parameters.json>"
+
+# Git ref or file path of the last-known-good template.
+# Examples:
+#   git:refs/heads/main:infra/main.bicep
+#   infra/lkg/main.json
+last_good_template_ref: "<git-ref-or-path>"
+last_good_parameters_file: "<relative-path-to-lkg-parameters.json>"

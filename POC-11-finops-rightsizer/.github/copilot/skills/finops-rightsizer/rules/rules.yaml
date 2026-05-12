@@ -1,0 +1,94 @@
+# FinOps Right-sizer — Rule Pack v1
+# DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
+# Each rule has: id, title, severity, weight, category, kql, target_sku (optional),
+#   skip_if_unavailable (optional), remediation_template.
+# weight represents the savings priority signal for this rule's candidates.
+# kql MUST return columns: id, name, resourceGroup, subscriptionId, location, currentSku.
+# Sort across all candidates: descending by est_monthly_savings, ties by name ascending.
+
+version: 1
+
+rules:
+  - id: R001
+    title: Oversized VMs in dev/test environments
+    severity: high
+    weight: 10
+    category: right-size
+    skip_if_unavailable: false
+    remediation_template: resize-vm.json
+    kql: |
+      Resources
+      | where type =~ 'microsoft.compute/virtualmachines'
+      | where tags.Environment in~ ('dev', 'test', 'development', 'testing', 'staging')
+      | where properties.hardwareProfile.vmSize in~ (
+          'Standard_D16s_v3', 'Standard_D32s_v3', 'Standard_D64s_v3',
+          'Standard_D16s_v4', 'Standard_D32s_v4', 'Standard_D64s_v4',
+          'Standard_D16s_v5', 'Standard_D32s_v5', 'Standard_D64s_v5',
+          'Standard_E16s_v3', 'Standard_E32s_v3', 'Standard_E64s_v3',
+          'Standard_E16s_v4', 'Standard_E32s_v4', 'Standard_E64s_v4',
+          'Standard_F16s_v2', 'Standard_F32s_v2', 'Standard_F64s_v2',
+          'Standard_D8s_v3', 'Standard_D8s_v4', 'Standard_D8s_v5',
+          'Standard_E8s_v3', 'Standard_E8s_v4'
+        )
+      | project id, name, resourceGroup, subscriptionId, location,
+          currentSku = tostring(properties.hardwareProfile.vmSize),
+          environment = tostring(tags.Environment)
+
+  - id: R002
+    title: VMs running Standard_D8s_v5 in non-production environments
+    severity: medium
+    weight: 8
+    category: right-size
+    skip_if_unavailable: false
+    target_sku: Standard_D4s_v5
+    remediation_template: resize-vm.json
+    kql: |
+      Resources
+      | where type =~ 'microsoft.compute/virtualmachines'
+      | where properties.hardwareProfile.vmSize =~ 'Standard_D8s_v5'
+      | where tags.Environment !in~ ('prod', 'production', 'prd')
+      | project id, name, resourceGroup, subscriptionId, location,
+          currentSku = tostring(properties.hardwareProfile.vmSize),
+          environment = tostring(tags.Environment)
+
+  - id: R003
+    title: Idle VMs in deallocated or stopped state
+    severity: critical
+    weight: 12
+    category: idle
+    skip_if_unavailable: false
+    remediation_template: resize-vm.json
+    kql: |
+      Resources
+      | where type =~ 'microsoft.compute/virtualmachines'
+      | where tostring(properties.extended.instanceView.powerState.code) in~ (
+          'PowerState/deallocated',
+          'PowerState/stopped'
+        )
+      | project id, name, resourceGroup, subscriptionId, location,
+          currentSku = tostring(properties.hardwareProfile.vmSize),
+          powerState = tostring(properties.extended.instanceView.powerState.code)
+
+  - id: R004
+    title: VMs with active Advisor right-size recommendations
+    severity: medium
+    weight: 6
+    category: advisor
+    skip_if_unavailable: true
+    remediation_template: resize-vm.json
+    kql: |
+      advisorresources
+      | where type =~ 'microsoft.advisor/recommendations'
+      | where category =~ 'Cost'
+      | where tostring(properties.impactedField) =~ 'microsoft.compute/virtualmachines'
+      | extend vmId = tolower(tostring(properties.resourceMetadata.resourceId))
+      | join kind=inner (
+          Resources
+          | where type =~ 'microsoft.compute/virtualmachines'
+          | extend vmId = tolower(id)
+          | project vmId, name, resourceGroup, subscriptionId, location,
+              currentSku = tostring(properties.hardwareProfile.vmSize)
+        ) on vmId
+      | project id, name, resourceGroup, subscriptionId, location, currentSku,
+          recommendedSku = tostring(properties.extendedProperties.targetSku),
+          annualSavingsAmount = tostring(properties.extendedProperties.annualSavingsAmount)

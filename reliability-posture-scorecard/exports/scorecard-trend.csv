@@ -1,0 +1,2 @@
+run_id,generated_utc,scope,ruleset_hash8,workloads_total,avg_score,min_score,rules_failing
+RPS-20260512-prod-dbef14c0,2026-05-12T03:43:39Z,prod,dbef14c0,8,83,76,6

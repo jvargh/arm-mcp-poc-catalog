@@ -1,0 +1,20 @@
+# Example values file — copy to `prod.values.yaml` and edit.
+# `prod.values.yaml` is gitignored; this `.example` is committed so others
+# know the schema.
+
+subscription_id: "<your-subscription-guid-here>"
+
+# === Freeze window 1 ===
+# Use ISO 8601 UTC format: YYYY-MM-DDTHH:MM:SSZ
+freeze_window_1_start: "2026-12-20T00:00:00Z"
+freeze_window_1_end: "2027-01-05T00:00:00Z"
+freeze_window_1_severity: "critical"
+
+# Resource groups that are frozen during this window.
+# Case-insensitive substring match is applied at check time.
+freeze_window_1_scopes:
+  - "<rg-name-1>"
+  - "<rg-name-2>"
+
+# To add a second freeze window, duplicate the four keys above with suffix _2, then
+# add a second entry to freeze_windows in prod.yaml.

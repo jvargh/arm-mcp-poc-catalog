@@ -1,0 +1,35 @@
+# Scope definition for the `prod` auto-rollback run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml.
+# See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Target subscription and resource group for the deployment being watched.
+subscription_id: "${subscription_id}"
+resource_group: "${resource_group}"
+
+# ARM deployment to watch.
+deployment_name: "${deployment_name}"
+
+# ARM template + parameters for the NEW deployment (being watched).
+template_file: "${template_file}"
+parameters_file: "${parameters_file}"
+
+# Last-known-good template reference (Git ref or file path).
+# Used as the rollback target when the health gate fails.
+# Example: "git:refs/heads/main:infra/main.bicep" or "infra/lkg/main.json"
+last_good_template_ref: "${last_good_template_ref}"
+
+# LKG parameters file (committed). Must be compatible with last_good_template_ref.
+last_good_parameters_file: "${last_good_parameters_file}"
+
+# Health gate: maximum seconds to wait for the deployment to settle before
+# declaring a timeout (triggers auto-rollback).
+health_gate_timeout_seconds: 120
+
+# Maximum number of rollback attempts before the orchestrator halts.
+# Halt message: STATUS=HALTED REASON=max-rollback-attempts-reached
+max_rollback_attempts: 2

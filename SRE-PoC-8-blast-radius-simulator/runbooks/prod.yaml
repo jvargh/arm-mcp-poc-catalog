@@ -1,0 +1,43 @@
+# Scope definition for the `prod` blast-radius simulation run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries.
+subscriptions: ["${subscription_id}"]
+
+# Path to the ARM template to simulate (relative to workspace root).
+template_path: ${template_path}
+
+# Impact categories evaluated by rules R001–R005.
+impact_categories:
+  - dns_endpoint
+  - identity_rotation
+  - cert_regen
+  - rbac
+  - dependency_edge
+
+# Weights per impact category (used in: risk_score = sum(weight × affected_count)).
+# Adjust to reflect your organisation's SLO priorities.
+risk_score_weights:
+  dns_endpoint:      15
+  identity_rotation: 10
+  cert_regen:        12
+  rbac:               9
+  dependency_edge:    8
+
+# Strategy recommendation thresholds and mappings.
+# risk_score < low_threshold  → strategy: canary
+# risk_score < med_threshold  → strategy: blue-green
+# risk_score >= med_threshold → strategy: staggered
+deploy_strategy_recommendations:
+  low_threshold: 20
+  medium_threshold: 60
+  strategies:
+    low:    canary
+    medium: blue-green
+    high:   staggered

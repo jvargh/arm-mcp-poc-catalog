@@ -1,0 +1,8 @@
+{
+	"servers": {
+		"Azure Resource Manager MCP Server": {
+			"type": "http",
+			"url": "https://mcp.management.azure.com"
+		}
+	}
+}

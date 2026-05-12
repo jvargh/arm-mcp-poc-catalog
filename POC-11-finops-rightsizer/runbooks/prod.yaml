@@ -1,0 +1,33 @@
+# Scope definition for the `prod` right-sizer run.
+#
+# This file is a TEMPLATE — committed to git, contains no environment-specific
+# values. Real values live in a sibling `prod.values.yaml` (gitignored).
+# At load time the skill substitutes `${key}` tokens from prod.values.yaml
+# into this file. See SKILL.md "Step 1 — Load configuration".
+
+scope: prod
+
+# Subscriptions to include in ARG queries. Empty list = all subs the user can read.
+subscriptions: ["${subscription_id}"]
+
+# Environment tag values that qualify a VM as a right-size candidate.
+target_environments: ${target_environments}
+
+# Default target SKU when downsizing. Individual rules may override this.
+target_sku: ${target_sku}
+
+# Map of VM SKU name → estimated monthly cost in USD (integers).
+# Used to compute: est_monthly_savings = savings_rate_per_sku[current_sku] - savings_rate_per_sku[target_sku]
+# Operator MUST keep in sync with actual Azure pricing for your region.
+savings_rate_per_sku: ${savings_rate_per_sku}
+
+# Freeze controls — set freeze_active: true to prevent all deployments.
+freeze_active: ${freeze_active}
+
+# Optional: list of ISO-8601 intervals (e.g. "2026-12-24T00:00:00Z/2026-12-26T00:00:00Z").
+# If the current UTC time falls within any window, freeze_active is treated as true.
+freeze_windows: ${freeze_windows}
+
+# Resource group inclusion / exclusion (case-insensitive substrings, applied after the query).
+rg_include: ${rg_include}
+rg_exclude: ${rg_exclude}
