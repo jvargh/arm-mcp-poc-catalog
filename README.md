@@ -33,15 +33,15 @@ Every PoC has its own folder at the repo root with the same layout: agent defini
 
 | # | PoC | Folder |
 | --- | --- | --- |
-| 1 | Tag Hygiene Czar | [POC-1-tag-hygiene-czar/](POC-1-tag-hygiene-czar/) |
-| 2 | Blast Radius Analyzer | [POC-2-blast-radius-analyzer/](POC-2-blast-radius-analyzer/) |
-| 3 | Cost Driver Finder | [POC-3-cost-driver-finder/](POC-3-cost-driver-finder/) |
-| 4 | Golden Path Provisioner | [POC-4-golden-path-provisioner/](POC-4-golden-path-provisioner/) |
-| 5 | IaC Drift Detector | [POC-5-iac-drift-detector/](POC-5-iac-drift-detector/) |
-| 6 | Incident Responder | [POC-6-incident-responder/](POC-6-incident-responder/) |
-| 7 | Policy What-If | [POC-7-policy-what-if/](POC-7-policy-what-if/) |
-| 8 | Estate Cartographer | [POC-8-estate-cartographer/](POC-8-estate-cartographer/) |
-| 9 | ARM Template Fixer | [POC-9-arm-template-fixer/](POC-9-arm-template-fixer/) |
+| 1 | Tag Hygiene Czar | [POC-01-tag-hygiene-czar/](POC-01-tag-hygiene-czar/) |
+| 2 | Blast Radius Analyzer | [POC-02-blast-radius-analyzer/](POC-02-blast-radius-analyzer/) |
+| 3 | Cost Driver Finder | [POC-03-cost-driver-finder/](POC-03-cost-driver-finder/) |
+| 4 | Golden Path Provisioner | [POC-04-golden-path-provisioner/](POC-04-golden-path-provisioner/) |
+| 5 | IaC Drift Detector | [POC-05-iac-drift-detector/](POC-05-iac-drift-detector/) |
+| 6 | Incident Responder | [POC-06-incident-responder/](POC-06-incident-responder/) |
+| 7 | Policy What-If | [POC-07-policy-what-if/](POC-07-policy-what-if/) |
+| 8 | Estate Cartographer | [POC-08-estate-cartographer/](POC-08-estate-cartographer/) |
+| 9 | ARM Template Fixer | [POC-09-arm-template-fixer/](POC-09-arm-template-fixer/) |
 | 10 | Crown-Jewels Security | [POC-10-crown-jewels-security/](POC-10-crown-jewels-security/) |
 | 11 | FinOps Rightsizer | [POC-11-finops-rightsizer/](POC-11-finops-rightsizer/) |
 | 12 | ChatOps Bot | [POC-12-chatops-bot/](POC-12-chatops-bot/) |
@@ -50,15 +50,15 @@ Every PoC has its own folder at the repo root with the same layout: agent defini
 
 | # | PoC | Folder |
 | --- | --- | --- |
-| 1 | Incident Triage | [SRE-PoC-1-incident-triage/](SRE-PoC-1-incident-triage/) |
-| 2 | Change Freeze Enforcer | [SRE-PoC-2-change-freeze-enforcer/](SRE-PoC-2-change-freeze-enforcer/) |
-| 3 | Pre-flight Safety | [SRE-PoC-3-preflight-safety/](SRE-PoC-3-preflight-safety/) |
-| 4 | Auto Rollback | [SRE-PoC-4-auto-rollback/](SRE-PoC-4-auto-rollback/) |
-| 5 | Reliability Posture Scorecard ⭐ | [SRE-PoC-5-Reliability-posture-scorecard/](SRE-PoC-5-Reliability-posture-scorecard/) |
-| 6 | SLO Deployment Gate | [SRE-PoC-6-slo-deployment-gate/](SRE-PoC-6-slo-deployment-gate/) |
-| 7 | Capacity / Quota Guardian | [SRE-PoC-7-capacity-quota-guardian/](SRE-PoC-7-capacity-quota-guardian/) |
-| 8 | Blast Radius Simulator | [SRE-PoC-8-blast-radius-simulator/](SRE-PoC-8-blast-radius-simulator/) |
-| 9 | Stuck Deployment Janitor | [SRE-PoC-9-stuck-deployment-janitor/](SRE-PoC-9-stuck-deployment-janitor/) |
+| 1 | Incident Triage | [SRE-PoC-01-incident-triage/](SRE-PoC-01-incident-triage/) |
+| 2 | Change Freeze Enforcer | [SRE-PoC-02-change-freeze-enforcer/](SRE-PoC-02-change-freeze-enforcer/) |
+| 3 | Pre-flight Safety | [SRE-PoC-03-preflight-safety/](SRE-PoC-03-preflight-safety/) |
+| 4 | Auto Rollback | [SRE-PoC-04-auto-rollback/](SRE-PoC-04-auto-rollback/) |
+| 5 | Reliability Posture Scorecard ⭐ | [SRE-PoC-05-Reliability-posture-scorecard/](SRE-PoC-05-Reliability-posture-scorecard/) |
+| 6 | SLO Deployment Gate | [SRE-PoC-06-slo-deployment-gate/](SRE-PoC-06-slo-deployment-gate/) |
+| 7 | Capacity / Quota Guardian | [SRE-PoC-07-capacity-quota-guardian/](SRE-PoC-07-capacity-quota-guardian/) |
+| 8 | Blast Radius Simulator | [SRE-PoC-08-blast-radius-simulator/](SRE-PoC-08-blast-radius-simulator/) |
+| 9 | Stuck Deployment Janitor | [SRE-PoC-09-stuck-deployment-janitor/](SRE-PoC-09-stuck-deployment-janitor/) |
 | 10 | Runbook Executor | [SRE-PoC-10-runbook-executor/](SRE-PoC-10-runbook-executor/) |
 | 11 | Post-Incident Reconstructor | [SRE-PoC-11-post-incident-reconstructor/](SRE-PoC-11-post-incident-reconstructor/) |
 | 12 | Weekly Cleanup PRs | [SRE-PoC-12-weekly-cleanup-prs/](SRE-PoC-12-weekly-cleanup-prs/) |
