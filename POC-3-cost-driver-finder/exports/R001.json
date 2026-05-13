@@ -1,0 +1,77 @@
+{
+  "count": 7,
+  "data": [
+    {
+      "createdAt": "2026-05-09T07:24:37.2046876Z",
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.MachineLearningServices/workspaces/mlw-proj-ijnmi4grg6xho",
+      "location": "eastus2",
+      "name": "mlw-proj-ijnmi4grg6xho",
+      "owner": "",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "subscriptionId": "sub-id",
+      "type": "microsoft.machinelearningservices/workspaces"
+    },
+    {
+      "createdAt": "2026-05-09T07:24:20.2554783Z",
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.MachineLearningServices/workspaces/mlw-hub-ijnmi4grg6xho",
+      "location": "eastus2",
+      "name": "mlw-hub-ijnmi4grg6xho",
+      "owner": "",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "subscriptionId": "sub-id",
+      "type": "microsoft.machinelearningservices/workspaces"
+    },
+    {
+      "createdAt": "2026-05-09T07:24:00.0180000Z",
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.KeyVault/vaults/kv-gthemddprrwta",
+      "location": "eastus2",
+      "name": "kv-gthemddprrwta",
+      "owner": "",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "subscriptionId": "sub-id",
+      "type": "microsoft.keyvault/vaults"
+    },
+    {
+      "createdAt": "2026-05-09T07:24:00.0177843Z",
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.CognitiveServices/accounts/cog-cs-ijnmi4grg6xho",
+      "location": "eastus2",
+      "name": "cog-cs-ijnmi4grg6xho",
+      "owner": "",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "subscriptionId": "sub-id",
+      "type": "microsoft.cognitiveservices/accounts"
+    },
+    {
+      "createdAt": "2026-05-09T07:24:00.0177843Z",
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.CognitiveServices/accounts/cog-oai-ijnmi4grg6xho",
+      "location": "eastus2",
+      "name": "cog-oai-ijnmi4grg6xho",
+      "owner": "",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "subscriptionId": "sub-id",
+      "type": "microsoft.cognitiveservices/accounts"
+    },
+    {
+      "createdAt": "2026-05-08T14:18:11.3986948Z",
+      "id": "/subscriptions/sub-id/resourceGroups/az-foundry-rg/providers/Microsoft.CognitiveServices/accounts/jv-eastus2-proj-resource/projects/jv-eastus2-proj",
+      "location": "eastus2",
+      "name": "jv-eastus2-proj-resource/jv-eastus2-proj",
+      "owner": "",
+      "resourceGroup": "az-foundry-rg",
+      "subscriptionId": "sub-id",
+      "type": "microsoft.cognitiveservices/accounts/projects"
+    },
+    {
+      "createdAt": "2026-05-08T14:17:58.3629297Z",
+      "id": "/subscriptions/sub-id/resourceGroups/az-foundry-rg/providers/Microsoft.CognitiveServices/accounts/jv-eastus2-proj-resource",
+      "location": "eastus2",
+      "name": "jv-eastus2-proj-resource",
+      "owner": "",
+      "resourceGroup": "az-foundry-rg",
+      "subscriptionId": "sub-id",
+      "type": "microsoft.cognitiveservices/accounts"
+    }
+  ],
+  "skip_token": null,
+  "total_records": 7
+}

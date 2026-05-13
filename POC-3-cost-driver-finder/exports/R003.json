@@ -1,0 +1,1017 @@
+{
+  "count": 101,
+  "data": [
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Compute/virtualMachines/rhelvm01/extensions/AADSSHLoginForLinux",
+      "location": "eastus2",
+      "name": "AADSSHLoginForLinux",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/virtualmachines/extensions"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/DefaultResourceGroup-EUS2/providers/Microsoft.OperationalInsights/workspaces/DefaultWorkspace-sub-id-EUS2",
+      "location": "eastus2",
+      "name": "DefaultWorkspace-sub-id-EUS2",
+      "resourceGroup": "defaultresourcegroup-eus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.operationalinsights/workspaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Sql/servers/sql-y7njcffivri2q/databases/FaultyWebAppDb",
+      "location": "eastus2",
+      "name": "FaultyWebAppDb",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.sql/servers/databases"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/VM-RG/providers/Microsoft.Compute/virtualMachines/rhelvm01/extensions/MDE.Linux",
+      "location": "eastus2",
+      "name": "MDE.Linux",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/virtualmachines/extensions"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/VM-RG/providers/Microsoft.Compute/virtualMachines/winvm01/extensions/MDE.Windows",
+      "location": "eastus2",
+      "name": "MDE.Windows",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/virtualmachines/extensions"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/aks02day2-rg/providers/Microsoft.Insights/dataCollectionRules/MSCI-eastus2-aks02day2",
+      "location": "eastus2",
+      "name": "MSCI-eastus2-aks02day2",
+      "resourceGroup": "aks02day2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.insights/datacollectionrules"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/NetworkWatcherRG/providers/Microsoft.Network/networkWatchers/NetworkWatcher_eastus2",
+      "location": "eastus2",
+      "name": "NetworkWatcher_eastus2",
+      "resourceGroup": "networkwatcherrg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networkwatchers"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Insights/scheduledqueryrules/SQL-Database-Connection-Unhealthy-y7njcffivri2q",
+      "location": "eastus2",
+      "name": "SQL-Database-Connection-Unhealthy-y7njcffivri2q",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.insights/scheduledqueryrules"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aksnapday2-rg_aksnapday2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-agentpool-26158496-nsg",
+      "location": "eastus2",
+      "name": "aks-agentpool-26158496-nsg",
+      "resourceGroup": "mc_aksnapday2-rg_aksnapday2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-agentpool-73197682-nsg",
+      "location": "eastus2",
+      "name": "aks-agentpool-73197682-nsg",
+      "resourceGroup": "mc_aks02day2-rg_aks02day2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-appgateway-73197682-nsg",
+      "location": "eastus2",
+      "name": "aks-appgateway-73197682-nsg",
+      "resourceGroup": "mc_aks02day2-rg_aks02day2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aksnapday2-rg_aksnapday2_eastus2/providers/Microsoft.Compute/virtualMachineScaleSets/aks-nodepool1-41183538-vmss",
+      "location": "eastus2",
+      "name": "aks-nodepool1-41183538-vmss",
+      "resourceGroup": "mc_aksnapday2-rg_aksnapday2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/virtualmachinescalesets"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Compute/virtualMachineScaleSets/aks-syspool-27568677-vmss",
+      "location": "eastus2",
+      "name": "aks-syspool-27568677-vmss",
+      "resourceGroup": "mc_aks02day2-rg_aks02day2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/virtualmachinescalesets"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Compute/virtualMachineScaleSets/aks-userpool-32075967-vmss",
+      "location": "eastus2",
+      "name": "aks-userpool-32075967-vmss",
+      "resourceGroup": "mc_aks02day2-rg_aks02day2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/virtualmachinescalesets"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-virtualkubelet-73197682-nsg",
+      "location": "eastus2",
+      "name": "aks-virtualkubelet-73197682-nsg",
+      "resourceGroup": "mc_aks02day2-rg_aks02day2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/mc_aksnapday2-rg_aksnapday2_eastus2/providers/Microsoft.Network/virtualNetworks/aks-vnet-26158496",
+      "location": "eastus2",
+      "name": "aks-vnet-26158496",
+      "resourceGroup": "mc_aksnapday2-rg_aksnapday2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/virtualnetworks"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/mc_aksnapday2-rg_aksnapday2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-vnet-26158496-aks-appgateway-nsg-eastus2",
+      "location": "eastus2",
+      "name": "aks-vnet-26158496-aks-appgateway-nsg-eastus2",
+      "resourceGroup": "mc_aksnapday2-rg_aksnapday2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/mc_aksnapday2-rg_aksnapday2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-vnet-26158496-aks-virtualkubelet-nsg-eastus2",
+      "location": "eastus2",
+      "name": "aks-vnet-26158496-aks-virtualkubelet-nsg-eastus2",
+      "resourceGroup": "mc_aksnapday2-rg_aksnapday2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/virtualNetworks/aks-vnet-73197682",
+      "location": "eastus2",
+      "name": "aks-vnet-73197682",
+      "resourceGroup": "mc_aks02day2-rg_aks02day2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/virtualnetworks"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-vnet-73197682-aks-appgateway-nsg-eastus2",
+      "location": "eastus2",
+      "name": "aks-vnet-73197682-aks-appgateway-nsg-eastus2",
+      "resourceGroup": "mc_aks02day2-rg_aks02day2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/networkSecurityGroups/aks-vnet-73197682-aks-virtualkubelet-nsg-eastus2",
+      "location": "eastus2",
+      "name": "aks-vnet-73197682-aks-virtualkubelet-nsg-eastus2",
+      "resourceGroup": "mc_aks02day2-rg_aks02day2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/aks02day2-rg/providers/Microsoft.ContainerService/managedClusters/aks02day2",
+      "location": "eastus2",
+      "name": "aks02day2",
+      "resourceGroup": "aks02day2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.containerservice/managedclusters"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.ManagedIdentity/userAssignedIdentities/aks02day2-agentpool",
+      "location": "eastus2",
+      "name": "aks02day2-agentpool",
+      "resourceGroup": "mc_aks02day2-rg_aks02day2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.managedidentity/userassignedidentities"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/aks02day2-rg/providers/Microsoft.OperationalInsights/workspaces/aks02day2law",
+      "location": "eastus2",
+      "name": "aks02day2law",
+      "resourceGroup": "aks02day2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.operationalinsights/workspaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/aksnapday2-rg/providers/Microsoft.ContainerService/managedClusters/aksnapday2",
+      "location": "eastus2",
+      "name": "aksnapday2",
+      "resourceGroup": "aksnapday2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.containerservice/managedclusters"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aksnapday2-rg_aksnapday2_eastus2/providers/Microsoft.ManagedIdentity/userAssignedIdentities/aksnapday2-agentpool",
+      "location": "eastus2",
+      "name": "aksnapday2-agentpool",
+      "resourceGroup": "mc_aksnapday2-rg_aksnapday2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.managedidentity/userassignedidentities"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Web/sites/app-y7njcffivri2q",
+      "location": "eastus2",
+      "name": "app-y7njcffivri2q",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.web/sites"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Web/sites/app-y7njcffivri2q/slots/production",
+      "location": "eastus2",
+      "name": "app-y7njcffivri2q",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.web/sites/slots"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Web/sites/app-y7njcffivri2q/slots/staging",
+      "location": "eastus2",
+      "name": "app-y7njcffivri2q/staging",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.web/sites/slots"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.Insights/components/appi-ijnmi4grg6xho",
+      "location": "eastus2",
+      "name": "appi-ijnmi4grg6xho",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.insights/components"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Insights/components/appi-y7njcffivri2q",
+      "location": "eastus2",
+      "name": "appi-y7njcffivri2q",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.insights/components"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Compute/snapshots/asd",
+      "location": "eastus2",
+      "name": "asd",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/snapshots"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/apptesting-rg/providers/microsoft.insights/components/asdfasdfjv",
+      "location": "eastus2",
+      "name": "asdfasdfjv",
+      "resourceGroup": "apptesting-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.insights/components"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aksnapday2-rg_aksnapday2_eastus2/providers/Microsoft.Network/publicIPAddresses/b3681f9a-3dcf-48af-8f22-a9eec3653f22",
+      "location": "eastus2",
+      "name": "b3681f9a-3dcf-48af-8f22-a9eec3653f22",
+      "resourceGroup": "mc_aksnapday2-rg_aksnapday2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/publicipaddresses"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/publicIPAddresses/bb8ad3d9-6bea-4d6d-aedd-f5340b3c7f07",
+      "location": "eastus2",
+      "name": "bb8ad3d9-6bea-4d6d-aedd-f5340b3c7f07",
+      "resourceGroup": "mc_aks02day2-rg_aks02day2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/publicipaddresses"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.CognitiveServices/accounts/cog-cs-ijnmi4grg6xho",
+      "location": "eastus2",
+      "name": "cog-cs-ijnmi4grg6xho",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.cognitiveservices/accounts"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.CognitiveServices/accounts/cog-oai-ijnmi4grg6xho",
+      "location": "eastus2",
+      "name": "cog-oai-ijnmi4grg6xho",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.cognitiveservices/accounts"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/servicegroups-rg/providers/Microsoft.OperationalInsights/workspaces/cosmosdb-logs-ws",
+      "location": "eastus2",
+      "name": "cosmosdb-logs-ws",
+      "resourceGroup": "servicegroups-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.operationalinsights/workspaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-databricks-rg/providers/Microsoft.App/containerApps/databricks-mcp",
+      "location": "eastus2",
+      "name": "databricks-mcp",
+      "resourceGroup": "sre-databricks-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.app/containerapps"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-databricks-rg/providers/Microsoft.App/managedEnvironments/databricks-mcp-env",
+      "location": "eastus2",
+      "name": "databricks-mcp-env",
+      "resourceGroup": "sre-databricks-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.app/managedenvironments"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-databricks-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/databricks-mcp-identity",
+      "location": "eastus2",
+      "name": "databricks-mcp-identity",
+      "resourceGroup": "sre-databricks-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.managedidentity/userassignedidentities"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Compute/virtualMachines/rhelvm01/extensions/enablevmAccess",
+      "location": "eastus2",
+      "name": "enablevmAccess",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/virtualmachines/extensions"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-ijnmi4grg6xho",
+      "location": "eastus2",
+      "name": "id-ijnmi4grg6xho",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.managedidentity/userassignedidentities"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/az-foundry-rg/providers/Microsoft.CognitiveServices/accounts/jv-eastus2-proj-resource",
+      "location": "eastus2",
+      "name": "jv-eastus2-proj-resource",
+      "resourceGroup": "az-foundry-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.cognitiveservices/accounts"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/az-foundry-rg/providers/Microsoft.Insights/components/jv-eastus2-proj-resource-appinsights",
+      "location": "eastus2",
+      "name": "jv-eastus2-proj-resource-appinsights",
+      "resourceGroup": "az-foundry-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.insights/components"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/az-foundry-rg/providers/Microsoft.OperationalInsights/workspaces/jv-eastus2-proj-resource-logs",
+      "location": "eastus2",
+      "name": "jv-eastus2-proj-resource-logs",
+      "resourceGroup": "az-foundry-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.operationalinsights/workspaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/az-foundry-rg/providers/Microsoft.CognitiveServices/accounts/jv-eastus2-proj-resource/projects/jv-eastus2-proj",
+      "location": "eastus2",
+      "name": "jv-eastus2-proj-resource/jv-eastus2-proj",
+      "resourceGroup": "az-foundry-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.cognitiveservices/accounts/projects"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/loadBalancers/kubernetes",
+      "location": "eastus2",
+      "name": "kubernetes",
+      "resourceGroup": "mc_aks02day2-rg_aks02day2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/loadbalancers"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/MC_aksnapday2-rg_aksnapday2_eastus2/providers/Microsoft.Network/loadBalancers/kubernetes",
+      "location": "eastus2",
+      "name": "kubernetes",
+      "resourceGroup": "mc_aksnapday2-rg_aksnapday2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/loadbalancers"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/mc_aks02day2-rg_aks02day2_eastus2/providers/Microsoft.Network/publicIPAddresses/kubernetes-a95a544970a56496b8148bc88ee07f99",
+      "location": "eastus2",
+      "name": "kubernetes-a95a544970a56496b8148bc88ee07f99",
+      "resourceGroup": "mc_aks02day2-rg_aks02day2_eastus2",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/publicipaddresses"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.KeyVault/vaults/kv-gthemddprrwta",
+      "location": "eastus2",
+      "name": "kv-gthemddprrwta",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.keyvault/vaults"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.OperationalInsights/workspaces/log-ijnmi4grg6xho",
+      "location": "eastus2",
+      "name": "log-ijnmi4grg6xho",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.operationalinsights/workspaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.OperationalInsights/workspaces/log-y7njcffivri2q",
+      "location": "eastus2",
+      "name": "log-y7njcffivri2q",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.operationalinsights/workspaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Sql/servers/sql-y7njcffivri2q/databases/master",
+      "location": "eastus2",
+      "name": "master",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.sql/servers/databases"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.MachineLearningServices/workspaces/mlw-hub-ijnmi4grg6xho",
+      "location": "eastus2",
+      "name": "mlw-hub-ijnmi4grg6xho",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.machinelearningservices/workspaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.MachineLearningServices/workspaces/mlw-proj-ijnmi4grg6xho",
+      "location": "eastus2",
+      "name": "mlw-proj-ijnmi4grg6xho",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.machinelearningservices/workspaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Network/privateEndpoints/pe-sql-y7njcffivri2q",
+      "location": "eastus2",
+      "name": "pe-sql-y7njcffivri2q",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/privateendpoints"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Network/networkInterfaces/pe-sql-y7njcffivri2q.nic.286cb8b7-d474-442a-abb7-d615b476c5dc",
+      "location": "eastus2",
+      "name": "pe-sql-y7njcffivri2q.nic.286cb8b7-d474-442a-abb7-d615b476c5dc",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networkinterfaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/adf-rg/providers/Microsoft.Network/privateEndpoints/pe-to-shir",
+      "location": "eastus2",
+      "name": "pe-to-shir",
+      "resourceGroup": "adf-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/privateendpoints"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/adf-rg/providers/Microsoft.Network/networkInterfaces/pe-to-shir-nic",
+      "location": "eastus2",
+      "name": "pe-to-shir-nic",
+      "resourceGroup": "adf-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networkinterfaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Web/serverFarms/plan-y7njcffivri2q",
+      "location": "eastus2",
+      "name": "plan-y7njcffivri2q",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.web/serverfarms"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Compute/sshPublicKeys/rhelvm01",
+      "location": "eastus2",
+      "name": "rhelvm01",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/sshpublickeys"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Compute/virtualMachines/rhelvm01",
+      "location": "eastus2",
+      "name": "rhelvm01",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/virtualmachines"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Network/publicIPAddresses/rhelvm01-ip",
+      "location": "eastus2",
+      "name": "rhelvm01-ip",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/publicipaddresses"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Network/networkInterfaces/rhelvm01476",
+      "location": "eastus2",
+      "name": "rhelvm01476",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networkinterfaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/VM-RG/providers/Microsoft.Compute/disks/rhelvm01_OsDisk_1_3e6e316afffc44cd8ae6ba8f17c74454",
+      "location": "eastus2",
+      "name": "rhelvm01_OsDisk_1_3e6e316afffc44cd8ae6ba8f17c74454",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/disks"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Compute/sshPublicKeys/rhelvm01_key_1001",
+      "location": "eastus2",
+      "name": "rhelvm01_key_1001",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/sshpublickeys"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/VM-RG/providers/Microsoft.Compute/disks/rhelvm01_newdisk01",
+      "location": "eastus2",
+      "name": "rhelvm01_newdisk01",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/disks"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Network/networkSecurityGroups/rhelvm01nsg241",
+      "location": "eastus2",
+      "name": "rhelvm01nsg241",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Network/networkSecurityGroups/rhelvm02-nsg",
+      "location": "eastus2",
+      "name": "rhelvm02-nsg",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Network/virtualNetworks/rhelvm02-vnet",
+      "location": "eastus2",
+      "name": "rhelvm02-vnet",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/virtualnetworks"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Network/networkSecurityGroups/rhelvm02-vnet-default-nsg-eastus2",
+      "location": "eastus2",
+      "name": "rhelvm02-vnet-default-nsg-eastus2",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.DevTestLab/schedules/shutdown-computevm-rhelvm01",
+      "location": "eastus2",
+      "name": "shutdown-computevm-RHELVM01",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.devtestlab/schedules"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Sql/servers/sql-y7njcffivri2q",
+      "location": "eastus2",
+      "name": "sql-y7njcffivri2q",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.sql/servers"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre1-rg/providers/Microsoft.App/agents/sre1",
+      "location": "eastus2",
+      "name": "sre1",
+      "resourceGroup": "sre1-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.app/agents"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre1-rg/providers/Microsoft.Insights/components/sre1-3966940d-9a48-app-insights",
+      "location": "eastus2",
+      "name": "sre1-3966940d-9a48-app-insights",
+      "resourceGroup": "sre1-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.insights/components"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre1-rg/providers/Microsoft.Web/connections/sre1-office365",
+      "location": "eastus2",
+      "name": "sre1-office365",
+      "resourceGroup": "sre1-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.web/connections"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre1-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/sre1-slmop4tdlqiik",
+      "location": "eastus2",
+      "name": "sre1-slmop4tdlqiik",
+      "resourceGroup": "sre1-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.managedidentity/userassignedidentities"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre1-rg/providers/Microsoft.Web/connections/sre1-teams",
+      "location": "eastus2",
+      "name": "sre1-teams",
+      "resourceGroup": "sre1-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.web/connections"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre2-eus2-rg/providers/Microsoft.App/agents/sre2-eus2",
+      "location": "eastus2",
+      "name": "sre2-eus2",
+      "resourceGroup": "sre2-eus2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.app/agents"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre2-eus2-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/sre2-eus2-77nktbvgs3dbc",
+      "location": "eastus2",
+      "name": "sre2-eus2-77nktbvgs3dbc",
+      "resourceGroup": "sre2-eus2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.managedidentity/userassignedidentities"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre2-eus2-rg/providers/Microsoft.Insights/components/sre2-eus2-8ec06ae8-a969-app-insights",
+      "location": "eastus2",
+      "name": "sre2-eus2-8ec06ae8-a969-app-insights",
+      "resourceGroup": "sre2-eus2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.insights/components"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/apptesting-rg/providers/microsoft.insights/components/stdasdfasdjv",
+      "location": "eastus2",
+      "name": "stdasdfasdjv",
+      "resourceGroup": "apptesting-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.insights/components"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.Storage/storageAccounts/stgthemddprrwta",
+      "location": "eastus2",
+      "name": "stgthemddprrwta",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.storage/storageaccounts"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/rg-ai-obs-lab-dev/providers/Microsoft.EventGrid/systemTopics/stgthemddprrwta-0dbf248f-ae91-472a-8150-3f7166874255",
+      "location": "eastus2",
+      "name": "stgthemddprrwta-0dbf248f-ae91-472a-8150-3f7166874255",
+      "resourceGroup": "rg-ai-obs-lab-dev",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.eventgrid/systemtopics"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/servicegroups-rg/providers/Microsoft.DocumentDb/databaseAccounts/testingjv",
+      "location": "eastus2",
+      "name": "testingjv",
+      "resourceGroup": "servicegroups-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.documentdb/databaseaccounts"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/servicegroups-rg/providers/Microsoft.DocumentDB/databaseAccounts/testingjv-restored",
+      "location": "eastus2",
+      "name": "testingjv-restored",
+      "resourceGroup": "servicegroups-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.documentdb/databaseaccounts"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Network/virtualNetworks/vnet-y7njcffivri2q",
+      "location": "eastus2",
+      "name": "vnet-y7njcffivri2q",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/virtualnetworks"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Network/networkSecurityGroups/vnet-y7njcffivri2q-snet-appservice-nsg-eastus2",
+      "location": "eastus2",
+      "name": "vnet-y7njcffivri2q-snet-appservice-nsg-eastus2",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Network/networkSecurityGroups/vnet-y7njcffivri2q-snet-sql-pe-nsg-eastus2",
+      "location": "eastus2",
+      "name": "vnet-y7njcffivri2q-snet-sql-pe-nsg-eastus2",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.Insights/webtests/webtest-health-sql-y7njcffivri2q",
+      "location": "eastus2",
+      "name": "webtest-health-sql-y7njcffivri2q",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.insights/webtests"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Compute/virtualMachines/winvm01",
+      "location": "eastus2",
+      "name": "winvm01",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/virtualmachines"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Network/publicIPAddresses/winvm01-ip",
+      "location": "eastus2",
+      "name": "winvm01-ip",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/publicipaddresses"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Network/networkSecurityGroups/winvm01-nsg",
+      "location": "eastus2",
+      "name": "winvm01-nsg",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networksecuritygroups"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Network/networkInterfaces/winvm01883_z1",
+      "location": "eastus2",
+      "name": "winvm01883_z1",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.network/networkinterfaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/VM-RG/providers/Microsoft.Compute/disks/winvm01_OsDisk_1_83a24214de5849d788cbdb70f5f26209",
+      "location": "eastus2",
+      "name": "winvm01_OsDisk_1_83a24214de5849d788cbdb70f5f26209",
+      "resourceGroup": "vm-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.compute/disks"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-databricks-rg/providers/Microsoft.OperationalInsights/workspaces/workspace-sredatabricksrgkPZY",
+      "location": "eastus2",
+      "name": "workspace-sredatabricksrgkPZY",
+      "resourceGroup": "sre-databricks-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.operationalinsights/workspaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre2-eus2-rg/providers/Microsoft.OperationalInsights/workspaces/workspace77nktbvgs3dbc",
+      "location": "eastus2",
+      "name": "workspace77nktbvgs3dbc",
+      "resourceGroup": "sre2-eus2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.operationalinsights/workspaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.OperationalInsights/workspaces/workspacei5ot4rl6ldnqo",
+      "location": "eastus2",
+      "name": "workspacei5ot4rl6ldnqo",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.operationalinsights/workspaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre-demo2-rg/providers/Microsoft.OperationalInsights/workspaces/workspacep7c2ap53u4hzi",
+      "location": "eastus2",
+      "name": "workspacep7c2ap53u4hzi",
+      "resourceGroup": "sre-demo2-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.operationalinsights/workspaces"
+    },
+    {
+      "id": "/subscriptions/sub-id/resourceGroups/sre1-rg/providers/Microsoft.OperationalInsights/workspaces/workspaceslmop4tdlqiik",
+      "location": "eastus2",
+      "name": "workspaceslmop4tdlqiik",
+      "resourceGroup": "sre1-rg",
+      "rgOwner": "",
+      "subscriptionId": "sub-id",
+      "tagOwner": "",
+      "type": "microsoft.operationalinsights/workspaces"
+    }
+  ],
+  "skip_token": null,
+  "total_records": 101
+}

@@ -13,12 +13,12 @@
 | Rules evaluated | {{rules_evaluated}} |
 | Rules skipped | {{rules_skipped}} |
 | Rules invalid | {{rules_invalid}} |
-| Resources scanned | {{resources_scanned}} |
+| Resources with rule hits | {{resources_with_rule_hits}} |
 | Resources non-compliant | {{resources_noncompliant}} |
 
 ## Non-Compliant Resources
 
-*Sorted by resource group (ascending), resource type (ascending), resource name (ascending).*
+*Sorted by resource group (ascending), resource type (ascending), resource name (ascending), tag key (ascending).*
 
 | Resource Group | Resource Type | Resource Name | Resource ID | Missing Tag |
 |---|---|---|---|---|

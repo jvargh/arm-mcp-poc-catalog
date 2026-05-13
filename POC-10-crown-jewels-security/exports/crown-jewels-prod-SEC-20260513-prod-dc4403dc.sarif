@@ -1,0 +1,122 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "crown-jewels-security",
+          "version": "1.0.0",
+          "informationUri": "https://github.com/your-org/arm-mcp/tree/main/POC-10-crown-jewels-security",
+          "rules": [
+            {
+              "id": "R001",
+              "name": "InternetExposedResourcesWithManagedIdentities",
+              "shortDescription": {
+                "text": "Internet-exposed resources with managed identities"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "severity": "critical",
+                "weight": 15,
+                "category": "identity-exposure"
+              }
+            },
+            {
+              "id": "R002",
+              "name": "ResourcesWithOwnerContributorRoleAssignments",
+              "shortDescription": {
+                "text": "Resources with Owner or Contributor role assignments"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "severity": "high",
+                "weight": 12,
+                "category": "broad-rbac",
+                "skip_if_unavailable": true
+              }
+            },
+            {
+              "id": "R003",
+              "name": "KeyVaultsWithBroadNetworkAccess",
+              "shortDescription": {
+                "text": "Key Vaults with broad network access (Allow from All Networks)"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "severity": "high",
+                "weight": 10,
+                "category": "key-vault-exposure"
+              }
+            },
+            {
+              "id": "R004",
+              "name": "PublicFacingResourcesWithPublicIpAddresses",
+              "shortDescription": {
+                "text": "Public-facing resources with assigned public IP addresses"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "severity": "medium",
+                "weight": 8,
+                "category": "public-exposure"
+              }
+            },
+            {
+              "id": "R005",
+              "name": "ResourcesWithMultipleHighPrivilegeRoleAssignments",
+              "shortDescription": {
+                "text": "Resources with multiple high-privilege role assignments"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "severity": "critical",
+                "weight": 14,
+                "category": "broad-rbac",
+                "skip_if_unavailable": true
+              }
+            }
+          ]
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "properties": {
+            "runId": "SEC-20260513-prod-dc4403dc",
+            "rulesInvalid": 0,
+            "rulesTotal": 5,
+            "rgIncludeFilter": [
+              "aks01day2-rg",
+              "aks02day2-rg",
+              "aksnapday2-rg",
+              "apicenter-rg",
+              "apptesting-rg",
+              "az-foundry-rg"
+            ],
+            "rulesEvaluated": 5,
+            "resourcesScored": 0,
+            "rulesSkipped": 0,
+            "scope": "prod",
+            "crownJewelTagFilter": [
+              "Criticality=High",
+              "Environment=Production"
+            ],
+            "rulesetHash8": "dc4403dc"
+          }
+        }
+      ],
+      "results": []
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+run_id,generated_utc,template_filename,ruleset_hash8,attempts_total,final_status,last_error_code
+FIX-20260513-broken.json-f7e0d5b9,2026-05-13T05:41:36Z,broken.json,f7e0d5b9,3,SUCCESS,InvalidSku

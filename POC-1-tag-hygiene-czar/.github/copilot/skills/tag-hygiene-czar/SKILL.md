@@ -16,12 +16,20 @@ Inputs:
    corresponding value (lists/maps are inlined as YAML). Then parse the substituted
    text as YAML. If `<scope>.values.yaml` is missing, abort with the literal message:
    `ABORT: runbooks/<scope>.values.yaml missing — copy <scope>.values.yaml.example and fill in real values`.
-2. Extract from the parsed runbook: `subscriptions[]`, `rg_include[]`, `rg_exclude[]`,
+2. **Validate substitution completeness.** After substitution but before YAML parsing,
+   scan the substituted runbook text for any remaining `${key}` tokens. Treat a values
+   key as **missing** if it is absent from the values file or set to YAML `null`; an
+   empty list (`[]`) or empty map (`{}`) is a valid value and is **not** missing.
+   If any tokens remain unresolved, collect the unique key names, sort them
+   lexicographically, and abort with the literal message:
+   `ABORT: runbooks/<scope>.values.yaml missing required key(s): <comma-separated sorted keys>`.
+   Do not silently default; do not parse the runbook as YAML.
+3. Extract from the parsed runbook: `subscriptions[]`, `rg_include[]`, `rg_exclude[]`,
    `required_tags[]`, `default_tag_values{}`, `freeze_active` (boolean), `freeze_windows[]`.
-3. Read `skills/tag-hygiene-czar/rules/rules.yaml`. Compute SHA-256 of the file
+4. Read `skills/tag-hygiene-czar/rules/rules.yaml`. Compute SHA-256 of the file
    contents; keep first 8 hex chars as `ruleset_hash8`.
-4. Compute `run_id = "TAG-" + UTC date YYYYMMDD + "-" + scope + "-" + ruleset_hash8`.
-5. For each tag name in `required_tags` that has no matching `tag_key` entry in
+5. Compute `run_id = "TAG-" + UTC date YYYYMMDD + "-" + scope + "-" + ruleset_hash8`.
+6. For each tag name in `required_tags` that has no matching `tag_key` entry in
    `rules.yaml`, emit a warning row `STATUS=NO_RULE_DEFINED TAG=<name>` and continue.
    Do not attempt to generate KQL for undefined tags.
 
@@ -42,8 +50,9 @@ For each `rule` in `rules.yaml` **in file order** whose `tag_key` appears in
 
 1. Deduplicate: for each `(id, rule_id)` pair keep one row (no double-counting).
 2. Count `noncompliant_count` per `(rule_id, resourceGroup, type)`.
-3. Sort all result rows: `resourceGroup` ascending → `type` ascending → `name` ascending.
-   This sort order is fixed and must not be altered.
+3. Sort all result rows: `resourceGroup` ascending → `type` ascending → `name` ascending → `tag_key` ascending.
+   This sort order is fixed and must not be altered. The `tag_key` tiebreaker
+   guarantees a stable row order when one resource is missing multiple tags.
 
 ## Step 4 — Render output (verb-specific)
 
@@ -53,15 +62,30 @@ For each `rule` in `rules.yaml` **in file order** whose `tag_key` appears in
 2. Substitute placeholders **literally**:
    - `{{run_id}}`, `{{scope}}`, `{{generated_utc}}` (ISO 8601 to seconds, UTC, `Z` suffix),
      `{{rules_total}}`, `{{rules_evaluated}}`, `{{rules_skipped}}`, `{{rules_invalid}}`,
-     `{{resources_scanned}}` (distinct resource IDs across all executed rules),
+     `{{resources_with_rule_hits}}` (distinct resource IDs flagged by at least one
+     executed rule — equal to `{{resources_noncompliant}}` by construction since each
+     rule returns only non-compliant resources; retained for downstream parsers),
      `{{resources_noncompliant}}` (distinct resource IDs with at least one tag violation),
      `{{ruleset_hash8}}`.
    - `{{noncompliant_table}}` — one markdown row per non-compliant resource-tag pair,
-     sorted: `resourceGroup` ascending, `type` ascending, `name` ascending.
+     sorted: `resourceGroup` ascending, `type` ascending, `name` ascending,
+     `tag_key` ascending.
    - `{{failing_checks_table}}` — one row per rule with `noncompliant_count > 0`,
      sorted descending by `weight`, ties by `rule_id` ascending.
-3. Write the rendered report to `exports/tag-report-<scope>-latest.md`.
-4. Print the rendered report and one final confirmation line. Nothing else.
+3. Write the **full** rendered report to `exports/tag-report-<scope>-latest.md`.
+   The on-disk file is always complete regardless of any chat-preview rule below.
+4. **Chat output rule (deterministic preview):**
+   - If `noncompliant_table` has **50 rows or fewer**, print the full rendered report
+     to chat verbatim.
+   - If `noncompliant_table` has **more than 50 rows**, print the rendered report
+     with the `{{noncompliant_table}}` body truncated to the first 50 rows followed
+     by exactly this literal line as the 51st table row's replacement (no extra
+     blank line before it):
+     `_…and {{N}} more rows — see `exports/tag-report-<scope>-latest.md`._`
+     where `{{N}}` is `(total rows − 50)` as an integer. All other sections
+     (Header, Summary, Failing Checks, Footer) are printed verbatim and unchanged.
+5. Print exactly one final confirmation line, verbatim:
+   `SCAN COMPLETE: full report written to exports/tag-report-<scope>-latest.md`
 
 ### Verb = `drilldown <resource-group>`
 
@@ -116,7 +140,13 @@ For each `rule` in `rules.yaml` **in file order** whose `tag_key` appears in
 - The first H1 line of every scan report is exactly: `# Tag Hygiene Report`.
 - Section order is fixed: Header → Summary → Non-Compliant Resources → Failing Checks → Footer.
 - Sort order for the non-compliant table: `resourceGroup` ascending, `type` ascending,
-  `name` ascending. This order is frozen and must not be changed.
+  `name` ascending, `tag_key` ascending. This order is frozen and must not be changed.
+- The on-disk file at `exports/tag-report-<scope>-latest.md` always contains every
+  non-compliant row. Chat output may be truncated by the deterministic preview rule
+  in Step 4 (threshold = 50 rows, exact literal footer line). Programmatic callers
+  should consume the on-disk file, not chat output.
+- The final line of chat output is always the literal string
+  `SCAN COMPLETE: full report written to exports/tag-report-<scope>-latest.md`.
 - Numeric output is integer unless source data is a percentage (1 decimal place).
 - Tag compliance is **binary per resource per tag**: a resource either has the tag (with a
   non-empty value) or it does not. Partial matches are not considered compliant.

@@ -1,0 +1,5 @@
+run_id,generated_utc,scope,policy_name,alias_name,alias_field,rule_id,resource_id,resourceGroup,type,location,ownerTag
+POL-20260513-prod-594ee886,2026-05-13T05:31:42Z,prod,Require Owner tag on virtual machines,tags,tags.Owner,R001,/subscriptions/sub-id/resourceGroups/servicegroups-rg/providers/Microsoft.Compute/virtualMachines/vm01,servicegroups-rg,microsoft.compute/virtualmachines,centralus,
+POL-20260513-prod-594ee886,2026-05-13T05:31:42Z,prod,Require Owner tag on virtual machines,tags,tags.Owner,R001,/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Compute/virtualMachines/rhelvm01,vm-rg,microsoft.compute/virtualmachines,eastus2,
+POL-20260513-prod-594ee886,2026-05-13T05:31:42Z,prod,Require Owner tag on virtual machines,tags,tags.Owner,R001,/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Compute/virtualMachines/susevm01,vm-rg,microsoft.compute/virtualmachines,eastus,
+POL-20260513-prod-594ee886,2026-05-13T05:31:42Z,prod,Require Owner tag on virtual machines,tags,tags.Owner,R001,/subscriptions/sub-id/resourceGroups/vm-rg/providers/Microsoft.Compute/virtualMachines/winvm01,vm-rg,microsoft.compute/virtualmachines,eastus2,

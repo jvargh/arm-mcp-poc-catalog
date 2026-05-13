@@ -26,7 +26,8 @@ apply missing tags.
    Do not add sections, change column headers, change emoji, or reorder rows beyond
    what the template specifies.
 4. **Sort order is fixed:** non-compliant table rows sorted by `resourceGroup` ascending,
-   then `type` ascending, then `name` ascending.
+   then `type` ascending, then `name` ascending, then `tag_key` ascending. The fourth
+   key guarantees a stable row order when one resource is missing multiple tags.
 5. **Numeric formatting:** counts as integers. Percentages to 1 decimal place.
 6. **Run ID format:** `TAG-{YYYYMMDD}-{scope}-{ruleset_hash8}` where `ruleset_hash8` is
    the first 8 chars of the SHA-256 of the `rules.yaml` file contents.

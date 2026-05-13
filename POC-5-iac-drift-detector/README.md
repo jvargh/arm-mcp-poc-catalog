@@ -1,135 +1,173 @@
 # IaC Drift Detector (ARM MCP PoC)
 
-A Copilot CLI / VS Code chat agent that compares a **checked-in ARM template** with live Azure
-resource state via ARG and reports **property-level drift in plain English**, including a
-structured JSON patch (RFC 6902) diff for every drifted resource.
-
-Backed by the [Azure Resource Manager MCP Server](https://aka.ms/JoinARMMCP).
+A Copilot CLI / VS Code chat agent that compares a **checked-in ARM template** against  
+**live Azure state** (read via Azure Resource Graph through the  
+[Azure Resource Manager MCP Server](https://aka.ms/JoinARMMCP)) and emits a deterministic,  
+property-level drift report in markdown plus an RFC 6902 JSON patch block.
 
 ## What it does
 
-1.  Reads the ARM template at `template_repo_path` (configured in `runbooks/prod.yaml`).
-2.  Filters to only the resource types listed in `resource_types_to_check`.
-3.  For each rule in `skills/iac-drift-detector/rules/rules.yaml`: calls `generate_query`
-    (scope tokens substituted) → `execute_query` (ARM MCP) to retrieve live resource state.
-4.  Compares template properties against live properties, field by field.
-5.  Renders a **deterministic drift report** using fixed markdown templates and a JSON patch
-    (RFC 6902) block for structured remediation tooling.
+You point the agent at a runbook (`runbooks/prod.yaml` + `runbooks/prod.values.yaml`) that  
+declares (a) which subscriptions and resource groups to look at, (b) which ARM template to  
+treat as the source of truth, and (c) which ARM resource types to evaluate. The agent loads  
+that template, walks each resource in declaration order, runs a fixed KQL query (one per  
+rule in `rules.yaml`) against ARG to fetch the matching live resource, and compares the  
+fields the rule cares about. Output is written to `exports/drift-<scope>-latest.md` and  
+classifies every resource as `IN_SYNC`, `DRIFTED`, or `MISSING_IN_LIVE`.
+
+## Rule pack (what is actually compared)
+
+Defined in [`rules/rules.yaml`](.github/copilot/skills/iac-drift-detector/rules/rules.yaml).  
+The rule IDs you see in the report's **Rule** column come from this file:
+
+| Rule | Resource type | Fields compared |
+| --- | --- | --- |
+| **R001** NSG security rule drift (high) | `microsoft.network/networksecuritygroups` | `properties.securityRules` |
+| **R002** VM SKU / size drift (high) | `microsoft.compute/virtualmachines` | `properties.hardwareProfile.vmSize` |
+| **R003** Storage account SKU and network ACL drift (high) | `microsoft.storage/storageaccounts` | `sku.name`, `properties.networkAcls.bypass`, `properties.networkAcls.defaultAction` |
+| **R004** Key Vault access policy drift (critical) | `microsoft.keyvault/vaults` | `properties.accessPolicies`, `properties.enableSoftDelete`, `properties.enablePurgeProtection` |
+| **R005** Generic resource property drift (medium, catch-all) | any type listed in `resource_types_to_check` | `properties` (whole-tree) |
+
+Only resource types listed in `resource_types_to_check` (in `prod.values.yaml`) are evaluated.  
+Rules whose `resource_type` is not in that list are skipped; rules that match but find no  
+template resources are recorded as `NO_TEMPLATE_RESOURCES`.
+
+## What the report looks like
+
+Each run writes [`exports/drift-<scope>-latest.md`](exports/). The shape is fixed by  
+[`templates/output-report.md`](.github/copilot/skills/iac-drift-detector/templates/output-report.md).  
+Sample (verbatim from the latest `prod` run):
+
+````
+# IaC Drift Report
+
+**Run ID:** DRIFT-20260513-prod-66fb84d2
+**Scope:** prod
+**Template:** `infra/main.json`
+
+## Summary
+
+| Metric                     | Value |
+|----------------------------|-------|
+| Template resources checked | 7     |
+| Resources with drift       | 0     |
+| Resources missing in live  | 7     |
+| Resources in sync          | 0     |
+
+## Drift Summary
+
+| Resource Name | Type                                     | Resource Group   | Rule | Drifted Fields | Status          |
+|---------------|------------------------------------------|------------------|------|----------------|-----------------|
+| aks01day2-nsg | microsoft.network/networksecuritygroups  | (template-only)  | R001 | (none)         | MISSING_IN_LIVE |
+| ...           | ...                                      | ...              | ...  | ...            | ...             |
+
+## JSON Patch (RFC 6902)
+
+```json
+[]
+```
+````
+
+### Status values
+
+| Status | Meaning |
+| --- | --- |
+| `IN_SYNC` | Template resource matched a live resource and every field in the rule's `diff_fields` was equal. |
+| `DRIFTED` | Template resource matched a live resource and at least one `diff_fields` value differs. The differing field names appear in the **Drifted Fields** column and a corresponding RFC 6902 `replace` op appears in the JSON patch block. |
+| `MISSING_IN_LIVE` | Template declares the resource (by name + type) but ARG returned no live resource of that type and name in the configured scope. Resource Group is shown as `(template-only)`. |
+
+If your latest run shows everything as `MISSING_IN_LIVE` (like the current sample run),  
+it means the resources named in `infra/main.json` do not exist in the resource groups  
+listed in `rg_include`. Either the template names are placeholders, or the runbook is  
+pointed at the wrong scope.
 
 ## Why the output is deterministic
 
-*   Queries are NOT generated by the LLM at run time — they are read verbatim from `rules.yaml`.
-    Only three string tokens are substituted: subscription IDs, RG filter clause, and resource
-    name filter clause.
-*   Resources are processed in **ARM template declaration order**. Drifted fields are sorted
+*   Queries are NOT generated by the LLM at run time. They are read verbatim from `rules.yaml`.  
+    Only three string tokens are substituted: `${subscriptions_filter}`, `${rg_filter}`,  
+    `${resource_names_filter}`.
+*   Resources are processed in **ARM template declaration order**. Drifted fields are sorted  
     **alphabetically**. RFC 6902 patch operations are sorted by `/path` ascending.
-*   The diff algorithm is field-equality only: no fuzzy matching, no inference.
-*   Diff format is fixed: JSON patch (RFC 6902) — `replace` / `add` / `remove` operations only.
-*   Run ID is derived from the UTC date + scope name + SHA-256 prefix of `rules.yaml`.
-    Identical inputs → identical run ID.
+*   Diff is field-equality only. No fuzzy matching, no inference.
+*   Patch format is fixed: RFC 6902 `replace` / `add` / `remove` operations.
+*   `run_id` = `DRIFT-{YYYYMMDD-UTC}-{scope}-{ruleset_hash8}` where `ruleset_hash8` is the  
+    first 8 hex chars of SHA-256 over `rules.yaml`. Same inputs, same run ID.
 
-## Determinism Deviation
+## Determinism deviation
 
-This PoC does not include `validate_query` in its tool allowlist per source spec. KQL
-correctness is assured by pre-testing during development. Operators running this PoC live
-should hand-verify `rules.yaml` KQL via the `validate_query` tool in another workspace if
-uncertain.
-
-The skip of `validate_query` is a binding decision ratified in
+This PoC does not include `validate_query` in its tool allowlist. KQL correctness is  
+assured by pre-testing during development. Operators should hand-verify `rules.yaml` KQL via  
+the `validate_query` tool in another workspace if uncertain. This skip is ratified in  
 `.squad/decisions/inbox/copilot-bishop-ratifications-2026-05-12.md` (item #7).
 
-## How it works (end-to-end flow)
+## End-to-end flow (what `@iac-drift-detector detect for scope prod` does)
 
-What happens after you type `@iac-drift-detector detect for scope prod`:
-
-1.  **Chat client routes the message.** VS Code Copilot Chat loads
-    [`.github/copilot/agents/iac-drift-detector.agent.md`](.github/copilot/agents/iac-drift-detector.agent.md)
+1.  **Chat client routes the message.** VS Code Copilot Chat loads  
+    [`iac-drift-detector.agent.md`](.github/copilot/agents/iac-drift-detector.agent.md)  
     as the system prompt.
-2.  **Workspace MCP server starts.** The runtime reads [`.vscode/mcp.json`](.vscode/mcp.json),
-    starts the ARM MCP server, and enumerates its tools. Only `generate_query` and `execute_query`
-    are used by this agent.
-3.  **Agent loads inputs.** It reads `runbooks/prod.yaml` (+ `prod.values.yaml` for real
-    values) and the ARM template at `template_repo_path`.
-4.  **Agent computes `run_id`** deterministically: `DRIFT-{YYYYMMDD}-{scope}-{ruleset_hash8}`.
-5.  **Agent enters the per-rule loop.** For each rule it takes the literal KQL from
-    `rules.yaml`, substitutes the three scope tokens, calls `generate_query`, then calls
-    `execute_query`. No `validate_query` call is made.
-6.  **Agent diffs** each live resource against its template counterpart, field by field.
-7.  **Agent renders** the drift report by literal `{{placeholder}}` substitution into
-    `templates/output-report.md` and writes it to `exports/drift-<scope>-latest.md`.
+2.  **Workspace MCP server starts.** The runtime reads [`.vscode/mcp.json`](.vscode/mcp.json)  
+    and starts the ARM MCP server. Only `generate_query` and `execute_query` are used.
+3.  **Agent loads inputs.** Reads `runbooks/prod.yaml` (substituting `${...}` tokens from  
+    `runbooks/prod.values.yaml`) and the ARM template at `template_repo_path`.
+4.  **Agent computes** `**run_id**` deterministically.
+5.  **Per-rule loop.** For each rule: take the literal KQL, substitute the three scope  
+    tokens, call `generate_query`, then `execute_query`. No `validate_query` call.
+6.  **Diff.** Each live resource is matched to its template counterpart by name and diffed  
+    against the rule's `diff_fields`.
+7.  **Render.** Literal `{{placeholder}}` substitution into  
+    [`templates/output-report.md`](.github/copilot/skills/iac-drift-detector/templates/output-report.md);  
+    write to `exports/drift-<scope>-latest.md`.
 
 ## Install
 
-1.  Clone this folder anywhere and open it as a workspace in VS Code.
-    The ARM MCP server is **already declared** at workspace scope in [`.vscode/mcp.json`](.vscode/mcp.json).
-    *   If your VS Code account isn't yet authorized for the ARM MCP preview, click through
-        <https://aka.ms/JoinARMMCP> once.
-    *   For GitHub Copilot CLI users: copy the `Azure Resource Manager MCP Server` entry from
+1.  Clone this folder anywhere and open it as a workspace in VS Code. The ARM MCP server is  
+    already declared at workspace scope in [`.vscode/mcp.json`](.vscode/mcp.json).
+    *   If your VS Code account isn't yet authorized for the ARM MCP preview, click through  
+        \<https://aka.ms/JoinARMMCP\> once.
+    *   For GitHub Copilot CLI users: copy the `Azure Resource Manager MCP Server` entry from  
         `.vscode/mcp.json` into `~/.copilot/mcp.json`.
-2.  Sign in to Azure (`az login`) with Reader + Resource Graph Reader on the target scope.
-
-> The MCP server entry at workspace scope (`.vscode/mcp.json`):
->
-> ```json
-> {
->   "servers": {
->     "Azure Resource Manager MCP Server": {
->       "type": "http",
->       "url": "https://mcp.management.azure.com"
->     }
->   }
-> }
-> ```
+2.  Sign in to Azure (`az login`) with **Reader** + **Resource Graph Reader** on the target scope.
 
 ## Configure your scope (do this before first run)
 
-`scope prod` maps to [`runbooks/prod.yaml`](runbooks/prod.yaml). Scope config is split into
+`scope prod` maps to [`runbooks/prod.yaml`](runbooks/prod.yaml). Scope config is split into  
 two files to keep secrets out of git:
 
 | File | Committed? | Contains |
-|---|---|---|
-| [`runbooks/prod.yaml`](runbooks/prod.yaml) | ✅ yes | Template with `${placeholder}` tokens. No real values. |
-| `runbooks/prod.values.yaml` | ❌ **gitignored** | Real subscription ID, RG names, template path. |
-| [`runbooks/prod.values.yaml.example`](runbooks/prod.values.yaml.example) | ✅ yes | Schema reference — copy to start. |
+| --- | --- | --- |
+| [`runbooks/prod.yaml`](runbooks/prod.yaml) | yes | Template with `${placeholder}` tokens. No real values. |
+| `runbooks/prod.values.yaml` | **gitignored** | Real subscription ID, RG names, template path. |
+| [`runbooks/prod.values.yaml.example`](runbooks/prod.values.yaml.example) | yes | Schema reference. Copy to start. |
 
 ### First-time setup
 
-1.  **Copy the example:**
-    ```powershell
-    Copy-Item runbooks/prod.values.yaml.example runbooks/prod.values.yaml
-    ```
+Copy the example:
 
-2.  **Edit `runbooks/prod.values.yaml`:**
-    ```yaml
-    subscription_id: "11111111-2222-3333-4444-555555555555"
-    rg_include:
-      - "payments-prod-rg"
-    rg_exclude: []
-    template_repo_path: "infra/main.json"
-    resource_types_to_check:
-      - "microsoft.network/networksecuritygroups"
-      - "microsoft.compute/virtualmachines"
-      - "microsoft.storage/storageaccounts"
-      - "microsoft.keyvault/vaults"
-    ```
+Edit `runbooks/prod.values.yaml` with your real values:
 
-3.  **Confirm `.gitignore` excludes it** (`**/runbooks/*.values.yaml` is in the root `.gitignore`).
+Confirm `.gitignore` excludes it (`**/runbooks/*.values.yaml`).
 
-4.  **Point `template_repo_path` at your ARM template** (relative to workspace root).
+Point `template_repo_path` at your ARM template (relative to workspace root). A starter  
+baseline lives at [`infra/main.json`](infra/main.json) with one example resource per  
+covered type. Replace its names, SKUs, and properties with whatever you actually expect  
+in the target resource groups.
 
 ## Run
 
 VS Code chat:
+
 ```
 @iac-drift-detector detect for scope prod
 ```
 
 GitHub Copilot CLI:
+
 ```
 gh copilot -p "Detect IaC drift for scope prod"
 ```
 
-Drill-down on a specific resource:
+Drill down on a specific resource (renders [`output-drilldown.md`](.github/copilot/skills/iac-drift-detector/templates/output-drilldown.md)):
+
 ```
 @iac-drift-detector drilldown /subscriptions/.../resourceGroups/.../providers/.../myResource
 ```
@@ -139,37 +177,56 @@ Drill-down on a specific resource:
 ```
 POC-5-iac-drift-detector/
   README.md
-  .vscode/mcp.json                        # ARM MCP server declaration
+  .vscode/mcp.json                          # ARM MCP server declaration
   .github/copilot/
     agents/
-      iac-drift-detector.agent.md         # agent persona + tool allowlist
-    skills/
-      iac-drift-detector/
-        SKILL.md                          # deterministic procedure
-        rules/rules.yaml                  # 5 rules: id, weight, diff_fields, ARG KQL
-        templates/
-          output-report.md               # fixed drift report format
-          output-drilldown.md            # fixed per-resource drilldown format
-        prompts/
-          detect.prompt.md               # detect verb
-          drilldown.prompt.md            # drilldown verb
+      iac-drift-detector.agent.md           # agent persona + tool allowlist
+    skills/iac-drift-detector/
+      SKILL.md                              # deterministic procedure (5 steps)
+      rules/rules.yaml                      # R001-R005: id, weight, diff_fields, KQL
+      templates/
+        output-report.md                    # fixed drift report format
+        output-drilldown.md                 # fixed per-resource drilldown format
+      prompts/
+        detect.prompt.md                    # detect verb
+        drilldown.prompt.md                 # drilldown verb
+  infra/
+    main.json                               # baseline ARM template (source of truth)
   runbooks/
-    prod.yaml                            # committed template (placeholders only)
-    prod.values.yaml                     # GITIGNORED — your real sub IDs / RG names / template path
-    prod.values.yaml.example             # committed schema reference
+    prod.yaml                               # committed template (placeholders only)
+    prod.values.yaml                        # GITIGNORED - real sub IDs / RG names / template path
+    prod.values.yaml.example                # committed schema reference
   exports/
-    .gitkeep                             # drift reports land here
-    test-run.md                          # simulated test run (builder artifact)
+    drift-prod-latest.md                    # latest run output (overwritten each run)
+    test-run.md                             # simulated run (builder artifact)
 ```
 
 ## Acceptance criteria mapping
 
 | Criterion | Where it lives |
-|---|---|
-| Walks ARM template resource list | SKILL.md Step 2 |
-| Per-resource ARG query for current props | SKILL.md Step 3 + `rules/rules.yaml` |
-| Diff renderer (markdown table + JSON patch) | `templates/output-report.md` + SKILL.md Step 4 |
-| Drift properties sorted alphabetically | SKILL.md Output contract |
-| Sort order: template declaration order | SKILL.md Output contract |
-| RFC 6902 JSON patch format | `templates/output-report.md`, SKILL.md Step 3 |
+| --- | --- |
+| Walks ARM template resource list | [SKILL.md](.github/copilot/skills/iac-drift-detector/SKILL.md) Step 2 |
+| Per-resource ARG query for current props | [SKILL.md](.github/copilot/skills/iac-drift-detector/SKILL.md) Step 3 + [`rules.yaml`](.github/copilot/skills/iac-drift-detector/rules/rules.yaml) |
+| Diff renderer (markdown table + JSON patch) | [`output-report.md`](.github/copilot/skills/iac-drift-detector/templates/output-report.md) + [SKILL.md](.github/copilot/skills/iac-drift-detector/SKILL.md) Step 5 |
+| Drift properties sorted alphabetically | [SKILL.md](.github/copilot/skills/iac-drift-detector/SKILL.md) Step 3 + Output contract |
+| Sort order: template declaration order | [SKILL.md](.github/copilot/skills/iac-drift-detector/SKILL.md) Step 4 + Step 5 |
+| RFC 6902 JSON patch format | [`output-report.md`](.github/copilot/skills/iac-drift-detector/templates/output-report.md), [SKILL.md](.github/copilot/skills/iac-drift-detector/SKILL.md) Step 3 |
+| `MISSING_IN_LIVE` / `IN_SYNC` / `DRIFTED` status classification | [SKILL.md](.github/copilot/skills/iac-drift-detector/SKILL.md) Step 3 (steps 8-9), Step 4 |
 | Optional: GitHub issue/PR with drift | Out of scope for this PoC (read-only) |
+
+```
+subscription_id: "11111111-2222-3333-4444-555555555555"
+rg_include:
+  - "payments-prod-rg"
+rg_exclude: []
+template_repo_path: "infra/main.json"
+resource_types_to_check:
+  - "microsoft.network/networksecuritygroups"
+  - "microsoft.compute/virtualmachines"
+  - "microsoft.storage/storageaccounts"
+  - "microsoft.keyvault/vaults"
+```
+
+```
+Copy-Item runbooks/prod.values.yaml.example runbooks/prod.values.yaml
+```
