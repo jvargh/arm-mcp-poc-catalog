@@ -94,8 +94,10 @@ one timeline → sort ascending by timestamp → render via fixed template. Supp
    The ARM MCP server is **already declared** at workspace scope in [`.vscode/mcp.json`](.vscode/mcp.json).
    - If your VS Code account isn't yet authorized for the ARM MCP preview, click through
      <https://aka.ms/JoinARMMCP> once.
-   - For GitHub Copilot CLI users: copy the `Azure Resource Manager MCP Server` entry from
-     `.vscode/mcp.json` into `~/.copilot/mcp.json`.
+   - **GitHub Copilot CLI users:** the CLI does NOT read `.vscode/mcp.json`. Add the ARM MCP
+     entry to `~/.copilot/mcp-config.json` under the `mcpServers` map (note: file is
+     `mcp-config.json`, not `mcp.json`; the schema key is `mcpServers`, not `servers`).
+     Restart the CLI session after editing — MCP servers are loaded at session start.
 2. Sign in to Azure (`az login`) with Reader + Resource Graph Reader on the target scope.
 
 > The MCP server entry at workspace scope (`.vscode/mcp.json`):
@@ -110,6 +112,43 @@ one timeline → sort ascending by timestamp → render via fixed template. Supp
 >   }
 > }
 > ```
+>
+> The equivalent entry for `~/.copilot/mcp-config.json` (Copilot CLI):
+>
+> ```json
+> {
+>   "mcpServers": {
+>     "arm-mcp": {
+>       "tools": ["*"],
+>       "type": "http",
+>       "url": "https://mcp.management.azure.com"
+>     }
+>   }
+> }
+> ```
+
+### Emergency fallback when ARM MCP isn't available
+
+If `validate_query` / `execute_query` aren't surfaced as tools (CLI session started before
+ARM MCP was registered, preview not yet enabled, transient HTTP error, etc.), the agent
+keeps determinism by falling back to the Azure Resource Graph REST API directly. This is
+the documented escape hatch — same KQL from `rules.yaml`, same Run ID, byte-identical
+report shape:
+
+```powershell
+# Per rule: write the literal KQL from rules.yaml into a body file, then POST
+$body = @{
+  subscriptions = @("<sub-id>")
+  query         = "<KQL from rules.yaml with ${start_utc}/${end_utc} substituted>"
+} | ConvertTo-Json -Depth 5
+$body | Set-Content "$env:TEMP\r001.json" -Encoding UTF8
+az rest --method post `
+  --url "https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=2022-10-01" `
+  --body "@$env:TEMP\r001.json" --headers "Content-Type=application/json"
+```
+
+Do **not** use `az graph query "..."` from PowerShell — it silently drops the KQL `project`
+clause when the query contains pipes. Always go through `az rest --body @file.json`.
 
 ## Configure your scope (do this before first run)
 
@@ -182,6 +221,12 @@ A real run captured on `2026-05-14` against scope `prod`, subscription
 produced (Incident Summary section elided for brevity — the live report renders
 the full [`templates/output-report.md`](.github/copilot/skills/post-incident-reconstructor/templates/output-report.md)):
 
+> **Determinism verified:** two independent runs on `2026-05-14` (one through
+> ARM MCP, one through the `az rest` fallback) produced the same Run ID
+> `POST-20260514-prod-b470ce58`, the same Rules Summary counts, and the same
+> two-line Change Timeline. Identical inputs → byte-near-identical outputs is
+> the contract; this run confirmed it end-to-end.
+
 ~~~markdown
 # Post-Incident Change Timeline
 
@@ -215,13 +260,16 @@ How to read this:
 - **R001 evaluated, 0 rows** → no ARM deployments occurred in the window. The query
   ran successfully against the `Resources` table.
 - **R002 SKIPPED** → the `resourcechanges` table is not populated for this subscription
-  (Change History is not enabled). Sentinel emitted; agent continued.
+  (Change History is not enabled). ARG returns
+  `'where' operator: Failed to resolve column or scalar expression named 'changeTime'`,
+  which the skill treats as the table-unavailable signal. Sentinel emitted; agent continued.
 - **R003 SKIPPED** → no RBAC role assignments were created in the window (empty
   result set on a skippable rule is treated as SKIPPED).
 - **R004 INVALID** → R004 joins to `resourcechanges`, so when that table is
-  unavailable the *whole* R004 query fails to resolve and is marked INVALID. This
-  is **expected** behaviour today — see ratification note below. R004's signal is
-  a strict superset of R001 + R002, so when R002 is off you lose nothing
+  unavailable the *whole* R004 query fails to resolve and is marked INVALID with
+  `'extend' operator: Failed to resolve scalar expression named 'correlationId'`.
+  This is **expected** behaviour today — see ratification note below. R004's signal
+  is a strict superset of R001 + R002, so when R002 is off you lose nothing
   irreplaceable.
 
 If your first report looks like this, the **fix is on the Azure side** (enable
@@ -305,3 +353,4 @@ After enabling, allow up to ~30 minutes for ARG to start indexing changes, then 
 | `STATUS=SKIPPED REASON=authorizationresources-unavailable` and you *expected* RBAC churn | Either no role assignments were actually created in the window, or your principal lacks read on `Microsoft.Authorization/roleAssignments` for the scope | Confirm with `az role assignment list --scope ...` for the same window; grant `Reader` on the scope if missing |
 | `ABORT: runbooks/prod.values.yaml missing` | First-time setup not done | Copy `prod.values.yaml.example` → `prod.values.yaml` and fill in real values |
 | Run ID changes between two runs you expected to match | Either the rule pack changed (different `ruleset_hash8`), or the UTC date rolled over between runs | Diff `rules/rules.yaml` against last commit; check that both runs occurred on the same UTC day |
+| Agent says it can't find `validate_query` / `execute_query` (Copilot CLI) | ARM MCP not registered in `~/.copilot/mcp-config.json`, or session started before it was added | Add the `arm-mcp` HTTP entry under `mcpServers` (see Install) and restart the CLI session. Until then, the agent falls back to `az rest --body @file.json` per the documented escape hatch — output remains deterministic. |
