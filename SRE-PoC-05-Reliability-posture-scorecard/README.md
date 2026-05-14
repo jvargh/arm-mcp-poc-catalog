@@ -6,15 +6,60 @@ it is run with the same scope and ruleset.
 
 Backed by the [Azure Resource Manager MCP Server](https://aka.ms/JoinARMMCP).
 
-## What it does
+## Purpose
 
-1.  Loads a fixed rule pack (`skills/reliability-scorecard/rules/rules.yaml`) — 12 weighted  
-    reliability checks with **pre-canned ARG queries**.
-2.  For every rule: `validate_query` → `execute_query` (ARM MCP).
-3.  Aggregates findings per workload (default = resource group; configurable to a tag).
-4.  Renders a report using a **fixed markdown template** (`templates/output-report.md`).
-5.  Generates ARM patch templates for the top 3 gap types from `remediation/`.
-6.  Writes a row to `exports/scorecard-trend.csv` for weekly trend tracking.
+Most "Azure best practice" tools today are LLM-driven: ask twice, get two
+different scores. This PoC is the **reference implementation** of the
+ARM-MCP determinism contract — the proof that an LLM agent can produce
+**byte-near-identical reports from byte-near-identical inputs** when the
+queries, scoring formula, sort orders, and output template are all pinned.
+It is the ⭐ exemplar that the rest of the
+[ARM MCP PoC catalog](../README.md) builds on.
+
+Concretely:
+
+*   A fixed rule pack (12 weighted SRE checks) lives in
+    [`rules.yaml`](.github/copilot/skills/reliability-scorecard/rules/rules.yaml).
+*   The agent reads each rule's KQL **verbatim**, runs it through ARM MCP
+    (`validate_query` → `execute_query`), and renders findings into a
+    frozen markdown template via literal `{{placeholder}}` substitution.
+*   Two runs against the same scope on the same UTC day produce the same
+    `run_id` (`RPS-{YYYYMMDD}-{scope}-{sha256(rules.yaml)[:8]}`) and
+    identical numerical findings. Only `**Generated (UTC):**` differs —
+    [empirically validated by the 2026-05-12 live run](#lessons-from-the-2026-05-12-live-run).
+
+### Intended end state
+
+Once installed and pointed at your subscription you can:
+
+*   Type `@scorecard run for scope prod` weekly and trust that the report
+    differs from last week **only when your estate changed** — never
+    because the model "felt" different.
+*   Track posture over time via a one-row-per-run trend CSV
+    (`exports/scorecard-trend.csv`, upserted by `run_id`).
+*   Drill into any failing workload to see the exact KQL behind every
+    finding — no model paraphrase, no hidden filters.
+*   Generate ARM patch templates for the top three gap types and deploy
+    them only after explicit per-rule confirmation.
+
+### What it does on each run
+
+1.  Loads the rule pack and your scope (subscriptions + RG include/exclude
+    from a gitignored values file).
+2.  For every rule: `validate_query` → paginated `execute_query` (ARM MCP),
+    draining `skip_token` to completion.
+3.  Schema-shape sanity check on every result row — row keys MUST equal
+    the columns parsed from the rule's final `| project ...` clause.
+    This is the strongest defense against transport-mangled queries
+    silently dumping the full ARG resource shape.
+4.  Aggregates findings by workload (default = resource group; tag-based
+    grouping is deferred to v2). Counts are **distinct `id` counts**, so
+    `mv-expand` rules don't double-count.
+5.  Renders the report via literal `{{placeholder}}` substitution into
+    [`templates/output-report.md`](.github/copilot/skills/reliability-scorecard/templates/output-report.md).
+6.  Writes raw pre-filter rows to `exports/_run/{run_id}/` (used by
+    `drilldown` and `remediate`) and **upserts** one row in
+    `exports/scorecard-trend.csv` keyed by `run_id`.
 
 ## Why the output is deterministic
 
@@ -23,6 +68,63 @@ Backed by the [Azure Resource Manager MCP Server](https://aka.ms/JoinARMMCP).
 *   Scoring formula is fixed: `score = max(0, 100 - sum(weight of failed rules))`.
 *   Sort orders, column headers, decimal precision, and section order are all pinned in `SKILL.md`.
 *   Run ID is the input scope hash + UTC date — identical inputs → identical run ID.
+
+## What you get when you run it
+
+Every run produces a small set of artifacts with a stable, predictable
+shape. The committed [`exports/`](exports/) folder holds a **real
+sample** from the 2026-05-12 live run against subscription
+`463a82d4-…aa93` (8 RGs in EastUS2 — AKS clusters, Foundry, API Center,
+app-testing harnesses), so you can see what to expect before you run.
+
+| Artifact | Path | Lifecycle |
+| --- | --- | --- |
+| Top-level scorecard | [`exports/scorecard-{scope}-latest.md`](exports/scorecard-prod-latest.md) | Overwritten every run |
+| Immutable run-stamped copy | `exports/{run_id}.md` | Written every run, named by `run_id` |
+| Trend CSV | [`exports/scorecard-trend.csv`](exports/scorecard-trend.csv) | One row per `run_id`, **upserted** |
+| Per-run cache (raw rows + manifest) | `exports/_run/{run_id}/` | Used by `drilldown` and `remediate` |
+| Workload drilldown | [`exports/drilldown-{scope}-{workload}.md`](exports/drilldown-prod-mc_aks02day2-rg_aks02day2_eastus2.md) | Overwritten per (scope, workload) |
+| Remediation summary | `exports/remediation-{run_id}.md` | One per `remediate` run |
+
+The header of a real scorecard report looks like this:
+
+```markdown
+# Reliability Posture Scorecard
+
+**Run ID:** RPS-20260512-prod-dbef14c0
+**Scope:** prod
+**Generated (UTC):** 2026-05-12T03:43:39Z
+**Ruleset hash:** dbef14c0
+
+## Summary
+
+| Metric | Value |
+|---|---|
+| Rules total | 12 |
+| Rules evaluated | 12 |
+| Rules skipped | 0 |
+| Rules invalid | 0 |
+| Workloads scored | 8 |
+```
+
+…followed by a **Bottom 10 Workloads by Score** table, a **Failing
+Checks** table, and a **Top 3 Gaps** block. The full rendered sample is
+in [`exports/scorecard-prod-latest.md`](exports/scorecard-prod-latest.md);
+a per-workload drilldown is at
+[`exports/drilldown-prod-mc_aks02day2-rg_aks02day2_eastus2.md`](exports/drilldown-prod-mc_aks02day2-rg_aks02day2_eastus2.md).
+
+The trend CSV is one row per run — re-running on the same date
+**replaces** the row instead of appending a duplicate:
+
+```csv
+run_id,generated_utc,scope,ruleset_hash8,workloads_total,avg_score,min_score,rules_failing
+RPS-20260512-prod-dbef14c0,2026-05-12T03:43:39Z,prod,dbef14c0,8,83,76,6
+```
+
+> Note: the committed `exports/` files are a sample. Your first run will
+> overwrite them with results for **your** subscription, which is the
+> intended behaviour. Use git to recover the sample if you want to
+> compare side by side.
 
 ## How it works (end-to-end flow)
 
@@ -45,7 +147,7 @@ What happens after you type `@scorecard run for scope prod` — from prompt, thr
 13.  **LLM computes the score (skill step 3b).** Pure arithmetic per workload: `score = max(0, 100 - Σ weight of failed rules)`. Formula is in SKILL.md.
 14.  **LLM applies the fixed sort (skill step 3c).** Workloads sorted ascending by score, ties broken alphabetically. Top-3 gaps computed by `weight × failing_resource_count`, sorted desc, ties by `rule_id` asc.
 15.  **LLM renders the output (skill step 4).** Loads [`templates/output-report.md`](.github/copilot/skills/reliability-scorecard/templates/output-report.md) and does literal `{{placeholder}}` substitution for `{{run_id}}`, `{{scope}}`, `{{generated_utc}}`, `{{ruleset_hash8}}`, summary counts, the bottom-10 table, the failing-checks table, and the top-3 gaps block. Layout is frozen.
-16.  **LLM persists the artifacts.** Overwrites `exports/scorecard-prod-latest.md` with the rendered report and appends one CSV row to `exports/scorecard-trend.csv`.
+16.  **LLM persists the artifacts.** Overwrites `exports/scorecard-prod-latest.md` and `exports/{run_id}.md` with the rendered report, caches raw pre-filter rows + manifest under `exports/_run/{run_id}/`, and **upserts** one row keyed by `run_id` in `exports/scorecard-trend.csv` (re-runs replace the row; no duplicate is appended).
 17.  **LLM streams the result back to chat.** Same rendered markdown is returned as the assistant message — you see the report inline. No further MCP calls on the way out.
 18.  **Conversation pauses, awaiting next command.** No state persists in the LLM beyond chat history. The next run starts again at step 1, re-reads the YAML, and — given the same inputs — produces the same `run_id` and identical numbers.
 
@@ -129,7 +231,7 @@ az account list --query "[].{name:name, id:id}" -o table
 | You want… | Set this in `prod.values.yaml` |
 | --- | --- |
 | One specific sub | `subscription_id: "<sub-guid>"` |
-| Score by app instead of by RG | edit `prod.yaml`: `workload_key: App` (where `App` is a tag name) |
+| Score by app instead of by RG | _v2 — `workload_key` is pinned to `resourceGroup` in v1; SKILL.md aborts on any other value_ |
 | Only RGs containing "payments" | `rg_include: ["payments"]` |
 | Skip a particular RG | add it to `rg_exclude` |
 
@@ -174,8 +276,10 @@ VS Code chat:
 GitHub Copilot CLI:
 
 ```
-gh copilot -p "Run reliability scorecard for scope prod"
+copilot -p "Run reliability scorecard for scope prod"
 ```
+
+> **CLI users:** see [Copilot CLI usage notes](../README.md#copilot-cli-usage-notes) — `gh copilot` has a quoting bug on Windows when `copilot` lives on a path with spaces, `@agent` mentions don't work in the CLI, and first runs take a few minutes.
 
 Drill-down on one workload:
 
@@ -189,6 +293,69 @@ Generate remediation templates for the top 3 gap types:
 @scorecard remediate
 ```
 
+> Before your first real run, see
+> [Lessons from the 2026-05-12 live run](#lessons-from-the-2026-05-12-live-run)
+> for the operator-facing takeaways (determinism in practice, R003
+> shell-quoting trap on the CLI fallback path, the dominant signal on a
+> young dev/test sub, and the AKS-managed-RG noise pattern).
+
+## Lessons from the 2026-05-12 live run
+
+Two consecutive runs against subscription `463a82d4-…aa93`
+(8 RGs in EastUS2 — AKS clusters, Foundry, API Center, app-testing
+harnesses) validated the determinism contract end-to-end.
+
+1. **Determinism, empirically.** Both runs produced
+   `run_id` = `RPS-20260512-prod-dbef14c0`. The two rendered reports
+   differ on exactly **one line** — `**Generated (UTC):**` — and are
+   otherwise byte-identical: same Summary counts, same Bottom-10
+   ordering, same Failing Checks table, same Top-3 Gaps. Avg score 83,
+   min score 76, 6 distinct rules failing. This is the contract working
+   as designed: identical inputs → identical numbers, regardless of
+   model temperament, runtime, or wall clock.
+2. **All 12 rules ran cleanly.** 0 INVALID, 0 SKIPPED. This includes
+   the three "fragile" rules you should expect trouble on in adversarial
+   transports:
+   *   **R003** (missing diagnostic settings) uses a `join` with
+       `$left.rid == $right.parent`. The CLI fallback path (`az graph
+       query` from PowerShell) will silently expand `$left.rid` /
+       `$right.parent` inside double-quoted strings and corrupt the
+       query — pass KQL via `--body @file.json` or use the MCP
+       `execute_query` tool. See agent Hard Rule 11 ("Shell-quoting
+       safety").
+   *   **R009 / R010** (`mv-expand` over `agentPoolProfiles` and
+       `securityRules`). Both round-tripped cleanly through ARM MCP and
+       returned exactly the projected columns. Hard Rule 9
+       (schema-shape sanity check) is the safety net in case a future
+       transport bug causes them to silently dump the full ARG resource
+       shape.
+3. **R012 dominates a young dev/test sub.** 61 untagged resources was
+   the largest single signal in the run — gap score 244, by far the
+   top gap. If your goal is moving the average score, fixing tag
+   hygiene (R012, weight 4) is lower-leverage **per resource** than
+   fixing one R010 inbound-Internet NSG rule (weight 14). The Top-3
+   Gaps block ranks by `weight × failing_resource_count`, so volume
+   can outrank severity — read both columns, not just the rank.
+4. **AKS auto-managed RGs show up in the Bottom-10.** `MC_*` RGs
+   (managed-by-AKS, not provisioned by you) surfaced public IPs
+   (kubelet IPs), an inbound-Internet NSG rule (load balancer), and
+   12 untagged resources. If you want to score only RGs you provision
+   directly, add `rg_exclude: ["MC_"]` to your
+   `runbooks/prod.values.yaml` — the substring match is
+   case-insensitive.
+5. **Scope config split worked first try.** The two-file pattern
+   (`prod.yaml` template + gitignored `prod.values.yaml`) loaded with
+   no manual intervention and `${subscription_id}` / `${rg_include}`
+   substitution preserved the YAML shape. The skill aborts with a
+   literal message if the values file is missing — there is no silent
+   default to "all subscriptions you can read".
+6. **Determinism is not free.** The schema-shape contract (Hard Rule 9),
+   pagination contract (Hard Rule 8), distinct-`id` counting (SKILL.md
+   Step 2.9), and shell-quoting rule (Hard Rule 11) are mandatory
+   overhead. None were triggered as INVALID by this live run, but their
+   **absence** is exactly what would let an LLM-driven scorecard return
+   different numbers between runs.
+
 ## Layout
 
 ```
@@ -196,15 +363,15 @@ reliability-posture-scorecard/
   README.md
   .github/copilot/
     agents/
-      scorecard.agent.md          # agent persona + tool allowlist
+      scorecard.agent.md            # agent persona + tool allowlist
     skills/
       reliability-scorecard/
-        SKILL.md                  # deterministic procedure
-        rules/rules.yaml          # 12 rules: id, weight, ARG KQL, remediation ref
+        SKILL.md                    # deterministic procedure
+        rules/rules.yaml            # 12 rules: id, weight, ARG KQL, remediation ref
         templates/
-          output-report.md        # fixed top-level report format
-          output-drilldown.md     # fixed drilldown format
-          output-remediation.md   # fixed remediation summary format
+          output-report.md          # fixed top-level report format
+          output-drilldown.md       # fixed drilldown format
+          output-remediation.md     # fixed remediation summary format
         remediation/
           enable-diagnostic-settings.json
           enable-keyvault-soft-delete.json
@@ -214,11 +381,19 @@ reliability-posture-scorecard/
           drilldown.prompt.md
           remediate.prompt.md
   runbooks/
-    prod.yaml                     # committed template (placeholders only)
-    prod.values.yaml              # GITIGNORED — your real sub IDs / RG names
-    prod.values.yaml.example      # committed schema reference
-  exports/
-    .gitkeep                      # trend CSV lands here
+    prod.yaml                       # committed template (placeholders only)
+    prod.values.yaml                # GITIGNORED — your real sub IDs / RG names
+    prod.values.yaml.example        # committed schema reference
+  exports/                          # COMMITTED — sample output ships in git;
+    .gitkeep                        # your runs overwrite these files
+    scorecard-{scope}-latest.md     # most recent run for this scope
+    {run_id}.md                     # immutable run-stamped copy
+    scorecard-trend.csv             # one row per run_id (upserted, not appended)
+    drilldown-{scope}-{workload}.md # written when @scorecard drilldown runs
+    remediation-{run_id}.md         # written when @scorecard remediate runs
+    _run/{run_id}/
+      manifest.json                 # transport, sub list, per-rule status, hashes
+      {rule_id}.json                # raw pre-filter rows, used by drilldown/remediate
 ```
 
 ## Acceptance criteria mapping

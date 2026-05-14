@@ -96,8 +96,10 @@ VS Code chat:
 
 GitHub Copilot CLI:
 ```
-gh copilot -p "@chatops-bot ask how many SQL databases are in eastus2?"
+copilot -p "Use the chatops-bot agent to ask how many SQL databases are in eastus2"
 ```
+
+> **CLI users:** see [Copilot CLI usage notes](../README.md#copilot-cli-usage-notes) — `gh copilot` has a quoting bug on Windows when `copilot` lives on a path with spaces, `@agent` mentions don't work in the CLI, and first runs take a few minutes.
 
 ## Layout
 

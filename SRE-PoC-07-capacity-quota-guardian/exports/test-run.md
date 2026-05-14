@@ -91,7 +91,7 @@ Breached rows (3):
 - eastus / storage_accounts: 88.0% > 80% threshold
 
 ---
-*Run `@quota-guardian deploy scope prod --template <path>` to attempt a gated deploy.
+*Run `@capacity-quota-guardian deploy scope prod --template <path>` to attempt a gated deploy.
 On quota PASS the deploy is simulated (v1 is what-if only — no ARM deployment is made).*
 
 ---
@@ -136,5 +136,5 @@ Simulated deployment name: quota-guardian-deploy-<simulated>20260512-a3f8c21d</s
 ```
 
 > To check the status of a live deployment (future v2+), run:
-> `@quota-guardian status scope prod quota-guardian-deploy-20260512-a3f8c21d`
+> `@capacity-quota-guardian status scope prod quota-guardian-deploy-20260512-a3f8c21d`
 > This will call `get_arm_template_deployment_status` and return the raw ARM status.

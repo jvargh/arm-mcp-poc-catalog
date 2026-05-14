@@ -87,6 +87,18 @@ fixed sort orders, frozen markdown templates with `{{placeholder}}` slots only, 
 *   **Scope config split** - `runbooks/<scope>.yaml` is the committed template with `${placeholder}` tokens; `runbooks/<scope>.values.yaml` holds your real subscription/RG values and is gitignored.
 *   **No secrets in YAML, agents, or templates.** Use Azure Key Vault references or environment variables in deployable templates.
 
+## Copilot CLI usage notes
+
+Each PoC README shows two ways to invoke the agent: a VS Code Copilot Chat form (`@agent-name verb ...`) and a GitHub Copilot CLI form. A few cross-cutting things to know about the CLI form:
+
+*   **Use the standalone `copilot` binary, not `gh copilot`.** The `gh copilot` wrapper re-execs `copilot` through cmd without quoting, so it fails when the resolved `copilot` lives on a path containing spaces (e.g. the VS Code Insiders shim under `...\AppData\Roaming\Code - Insiders\...`). If your `copilot` binary is on a space-free path, `gh copilot -p "..."` is equivalent.
+*   **`@agent-name` mentions are VS Code Chat-only.** The CLI does not parse `@` mentions to route to a specific agent, so the CLI prompts in each README are written in plain English instead. The agent's skill files in `.github/copilot/skills/` still get pulled in as workspace context when you run `copilot` from the PoC folder.
+*   **First runs are slow.** Expect 3–5 minutes on a busy subscription: each rule typically does one `validate_query` + one `execute_query` ARG round-trip (gated by a model turn), and large result sets get serialized back into context.
+*   **Run from the PoC folder.** `cd` into the PoC directory before invoking `copilot` so the workspace `.vscode/mcp.json` and `.github/copilot/` agent + skill files are picked up.
+*   **Auth.** `az login` once with Reader + Resource Graph Reader on your target scope; deploy-capable PoCs also need Contributor on the target RGs.
+
+Common flags worth knowing: `--allow-all-tools` (skip per-tool approval prompts), `--no-ask-user` (fail rather than block on ambiguity), `-C <dir>` (run as if from another directory), `--additional-mcp-config <json>` (inject extra MCP servers without editing `~/.copilot/mcp-config.json`).
+
 ## Feedback / issues
 
 For ARM MCP Server bugs and feature requests: \<https://github.com/Azure/Azure-Resource-Manager-MCP/issues\>

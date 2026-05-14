@@ -6,4 +6,4 @@ subscription_id: "<your-subscription-guid-here>"
 
 # Path to the ARM template JSON file to simulate (relative to workspace root).
 # Example: "templates/my-app-template.json"
-template_path: "<path-to-arm-template.json>"
+template_path: "templates/sample-webapp.json"

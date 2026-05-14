@@ -1,0 +1,40 @@
+{
+  "run_id": "RBOOK-20260514-failover-runbook-2c076ca1",
+  "runbook_name": "failover-runbook",
+  "run_status": "FAILED",
+  "current_step_index": 3,
+  "last_completed_step_index": 2,
+  "total_steps": 7,
+  "run_status_override_note": "halted by on_fail=halt at step 3 confirm timeout",
+  "completed_utc": "2026-05-14T01:56:00Z",
+  "evidence_pack": [
+    {
+      "step_name": "Check pre-conditions — primary region health",
+      "type": "check",
+      "input": "Resources | where type =~ 'microsoft.compute/virtualmachines' | where location =~ 'eastus' | where tostring(properties.provisioningState) !~ 'Succeeded' | where subscriptionId in~ ('sub-id') | project id, name, resourceGroup, subscriptionId, location, provisioningState=tostring(properties.provisioningState)",
+      "output": "{\"count\":0,\"total_records\":0,\"data\":[]}",
+      "status": "PASS",
+      "timestamp_utc": "2026-05-14T01:55:10Z"
+    },
+    {
+      "step_name": "Check pre-conditions — failover region capacity",
+      "type": "check",
+      "input": "Resources | where type =~ 'microsoft.compute/virtualmachines' | where location =~ 'westus2' | where tostring(properties.provisioningState) =~ 'Succeeded' | where subscriptionId in~ ('sub-id') | project id, name, resourceGroup, subscriptionId, location",
+      "output": "{\"count\":0,\"total_records\":0,\"data\":[]}",
+      "status": "PASS",
+      "timestamp_utc": "2026-05-14T01:55:25Z"
+    },
+    {
+      "step_name": "Confirm failover gate",
+      "type": "confirm",
+      "input": "user-confirmation",
+      "output": "No user response received (operator unavailable). Per hard rule #4, silence is treated as FAIL/TIMED_OUT.",
+      "status": "TIMED_OUT",
+      "timestamp_utc": "2026-05-14T01:56:00Z"
+    }
+  ],
+  "started_utc": "2026-05-14T01:54:50Z",
+  "schema_hash8": "2c076ca1",
+  "subscriptions": ["sub-id"],
+  "state_file_path": "exports/prod-run-state.json"
+}

@@ -6,6 +6,43 @@ permanent audit log entry.
 
 Backed by the [Azure Resource Manager MCP Server](https://aka.ms/JoinARMMCP).
 
+## Purpose
+
+This PoC is a **deterministic, dry-run change-freeze gate** for Azure deployments. It exists
+to answer one question for an operator before they deploy:
+
+> *"Is the resource group I'm about to touch inside an active freeze window right now,
+> and if so, do I have a valid break-glass justification?"*
+
+It is intentionally **not** a deployer. v1 never calls `create_template_deployment`. The
+agent's job is to decide PASS / BLOCK / OVERRIDE_ALLOW against a freeze schedule defined in
+YAML, render a frozen-template decision report, and (on override) append an immutable audit
+line. The actual `az deployment group create` is left to the operator, who runs it after
+seeing the gate's decision.
+
+The freeze schedule, scopes, exemption tag, and break-glass field requirements are all
+declared in `runbooks/prod.yaml` + `runbooks/prod.values.yaml` — the agent never invents
+them and the LLM never hand-writes the underlying KQL.
+
+## Intended end state
+
+After a single run you have all of the following in `exports/` (deterministic filenames
+derived from the `run_id`):
+
+| Verb | Decision | File written | Audit log appended |
+|---|---|---|---|
+| `deploy` | ✅ PASS | `deploy-<run_id>.md` | — |
+| `deploy` | 🚫 BLOCK | `blocked-<run_id>.md` | — |
+| `override` | ⚠️ OVERRIDE_ALLOW | `override-<run_id>.md` | one JSON line in `override-audit.log` |
+| `status` | (informational) | none | — |
+
+`<run_id>` is `FREEZE-{YYYYMMDD}-{scope}-{sha256(rules.yaml)[:8]}`, so re-running the same
+inputs produces the same filename — useful for CI artifacts and audit reconciliation.
+
+The end state for the **operator** is a single markdown report they can paste into a change
+ticket or PR. The end state for the **organisation** is `exports/override-audit.log` — an
+append-only, git-committed JSONL trail of every break-glass approval.
+
 ## What it does
 
 1. Loads the freeze schedule from `runbooks/prod.yaml` — a list of `freeze_windows`
@@ -37,7 +74,7 @@ operator's deployment — not to deploy anything itself.
 
 ## How it works (end-to-end flow)
 
-What happens after you type `@change-freeze-enforcer deploy template: my-app.json target_scope: prod-rg scope: prod`.
+What happens after you type `@change-freeze-enforcer deploy template: runbooks/my-app.json target_scope: aks01day2-rg`.
 
 1. **Chat client routes the message.** VS Code Copilot Chat sees the `@change-freeze-enforcer`
    mention, loads `.github/copilot/agents/change-freeze-enforcer.agent.md` as the system
@@ -122,16 +159,18 @@ Add a second entry to `freeze_windows` in `prod.yaml` and the corresponding `_2`
 
 ## Run
 
-VS Code chat:
+These examples use the sample template at [`runbooks/my-app.json`](runbooks/my-app.json) and a target RG (`aks01day2-rg`) that is listed in `freeze_window_1_scopes` of `runbooks/prod.values.yaml`.
+
+VS Code chat (PASS — when no freeze window is currently active):
 
 ```
-@change-freeze-enforcer deploy template: my-app.json target_scope: payments-prod-rg
+@change-freeze-enforcer deploy template: runbooks/my-app.json target_scope: aks01day2-rg
 ```
 
-Override (break-glass):
+Override (break-glass — required when the target RG is inside an active freeze window):
 
 ```
-@change-freeze-enforcer override template: my-app.json target_scope: payments-prod-rg cr_id: CHG0012345 justification: P1 incident rollback
+@change-freeze-enforcer override template: runbooks/my-app.json target_scope: aks01day2-rg cr_id: CHG0012345 justification: P1 incident rollback
 ```
 
 Freeze schedule status:
@@ -145,6 +184,56 @@ Check status of an existing deployment:
 ```
 @change-freeze-enforcer status deployment_name: my-app-deploy-20261222
 ```
+
+### Forcing a BLOCK for testing
+
+The shipped `prod.values.yaml` sets `freeze_window_1_start` / `_end` to `2026-12-20` → `2027-01-05`, so a `deploy` run before that window returns **PASS**. To exercise the **BLOCK** path immediately, temporarily edit `runbooks/prod.values.yaml`:
+
+```yaml
+freeze_window_1_start: "2026-05-01T00:00:00Z"
+freeze_window_1_end:   "2026-05-31T00:00:00Z"
+```
+
+Then re-run the `deploy` command above against `aks01day2-rg` (or `aks02day2-rg`).
+
+### Last verified run (2026-05-13, PASS)
+
+The shipped `exports/deploy-FREEZE-20260513-prod-b0afab63.md` is the artifact from a real
+end-to-end run against subscription `sub-id`:
+
+| Field | Value from the run |
+|---|---|
+| Verb | `deploy` |
+| Template | `runbooks/my-app.json` (sample storage-account template, dry-run only) |
+| Target scope | `aks01day2-rg` |
+| Freeze window in config | `2026-12-20T00:00:00Z` → `2027-01-05T00:00:00Z` |
+| `current_utc` at run time | `2026-05-13T14:00:01Z` (before the window) |
+| Active freeze match | None |
+| Exemption tag | absent |
+| **Decision** | **✅ PASS** |
+| Run ID | `FREEZE-20260513-prod-b0afab63` |
+| Output file | `exports/deploy-FREEZE-20260513-prod-b0afab63.md` |
+
+Things that run confirmed about how the agent behaves in practice:
+
+- The four KQL rules (R001–R004) all returned in a single MCP round-trip per rule — no
+  retries, no `generate_query` calls, exactly as the determinism contract specifies.
+- The freeze decision is purely arithmetic against the configured window — because
+  `2026-05-13` is before `2026-12-20`, no active window matched and the agent never even
+  needed to inspect R004 exemption tags.
+- The output file name (`deploy-FREEZE-20260513-prod-b0afab63.md`) was reconstructible
+  from inputs alone: today's date + the scope name + the first 8 hex chars of
+  `sha256(rules.yaml)`. Re-running the same day with the same `rules.yaml` overwrites the
+  same file — there is no random suffix.
+- The PASS report explicitly states *"v1 does not invoke `create_template_deployment`"* —
+  this is by design (agent hard rule #3). The operator must run the actual deployment
+  themselves after seeing PASS.
+
+To reproduce the same artifact on your subscription, copy `prod.values.yaml.example` to
+`prod.values.yaml`, plug in your `subscription_id` and at least one RG name (matching one
+of the `freeze_window_1_scopes` entries — or change the scopes), then re-run the `deploy`
+command above. To see a **BLOCK** instead, follow the **Forcing a BLOCK for testing**
+recipe above.
 
 ## Layout
 
@@ -170,9 +259,12 @@ SRE-PoC-02-change-freeze-enforcer/
   runbooks/
     prod.yaml                        # committed template (placeholders only)
     prod.values.yaml.example         # committed schema reference
+    prod.values.yaml                 # gitignored — your real sub ID + freeze windows
+    my-app.json                      # sample ARM template used by deploy/override examples
   exports/
     .gitkeep
     test-run.md                      # simulated test outcome (3 scenarios)
+    deploy-FREEZE-20260513-prod-b0afab63.md   # real PASS artifact from the 2026-05-13 verified run
 ```
 
 ## Acceptance criteria mapping

@@ -1,9 +1,43 @@
 # Toil Killer: Weekly Drift + Cleanup PRs (SRE-PoC-12)
 
-A Copilot CLI / VS Code chat agent that scans Azure weekly for orphaned resources and IaC drift,
-then proposes a PR with corrective ARM patches and savings estimates — without ever deploying.
+A Copilot CLI / VS Code chat agent that scans Azure weekly for orphaned resources, IaC drift, and
+compliance gaps, then writes a **ready-to-review PR markdown** with corrective ARM patches and
+savings estimates — without ever deploying.
 
 Backed by the [Azure Resource Manager MCP Server](https://aka.ms/JoinARMMCP).
+
+## Purpose
+
+Manual cleanup of an Azure subscription is high-toil, low-judgement work: comb Resource Graph for
+untagged resources, diff live NSGs against the IaC repo, check that diagnostics are wired up,
+estimate the monthly cost of the orphans, and write up a change request. This PoC compresses that
+weekly chore into a **single deterministic chat command** that produces a reviewable artifact.
+
+The agent is intentionally narrow:
+
+- It only **observes** (Azure Resource Graph reads). It cannot mutate Azure state.
+- It only **proposes** (writes a PR-shaped markdown file under `exports/proposed-pr/`). It does not
+  open a GitHub PR or invoke a deployment.
+- Every run is **reproducible**: the rule pack is hashed into the run ID, queries are read verbatim,
+  and sort order is fixed — so the same scope on the same day produces the same report.
+
+## Intended end state
+
+When fully adopted in an SRE rotation, a single weekly cycle looks like this:
+
+1. **Monday 09:00 UTC** — a scheduled trigger runs `@weekly-cleanup scan for scope prod`.
+2. The agent writes `exports/proposed-pr/CLEAN-<date>-prod-<hash>.md` to the repo (or to a workflow
+   artifact). The file contains the categorized findings, savings estimate, and references to ARM
+   patch templates under `remediation/`.
+3. A follow-on workflow (out of scope for v1 — see [Roadmap](#roadmap-to-the-intended-end-state))
+   opens an actual GitHub PR using that markdown as the body.
+4. The on-call SRE reviews the PR: dismisses false positives by tagging resources or updating
+   IaC, and approves the rest. Merging the PR triggers the existing IaC deployment pipeline that
+   actually applies the ARM patches.
+5. The next week's scan picks up the residual drift and the cycle continues. Steady-state goal:
+   a small, boring PR every Monday — not a 500-row dump.
+
+This PoC delivers steps 1–2 end-to-end and leaves steps 3–5 to the host environment.
 
 ## What it does
 
@@ -41,7 +75,7 @@ hand-verify `rules.yaml` KQL via the `validate_query` tool in another workspace 
 `create_template_deployment` appears in the tool allowlist for **shape conformance** with the
 canonical fleet pattern only. **The agent MUST NEVER call it.** v1 PROPOSES templates by writing
 them to `exports/proposed-pr/`; humans review and merge to a Git repo separately.
-PR creation is conceptual and out of scope — see [Out of scope](#out-of-scope-future-enhancements).
+PR creation is conceptual and out of scope — see [Roadmap](#roadmap-to-the-intended-end-state).
 
 ## Schedule discipline
 
@@ -75,6 +109,106 @@ Automated scheduling via GitHub Actions cron or Azure Pipelines is a future enha
    cleanup table, savings summary, and ARM patch template references (`remediation/*.json`).
 10. **PR markdown written to disk.** Rendered to `exports/proposed-pr/CLEAN-<run_id>.md`.
     No deployment is issued. GitHub PR creation is out of scope for v1.
+
+## Example: what a real run produces
+
+Here is the actual output from a recent `scan` against a six-RG allowlist on a development
+subscription. Use this to calibrate what a healthy first run will look like in your environment.
+
+**Invocation:**
+
+```
+@weekly-cleanup scan for scope prod
+```
+
+**Header:**
+
+```
+Run ID:        CLEAN-20260514-prod-271fbbd5
+Scope:         prod
+Generated:     2026-05-14T02:13:32Z
+Ruleset hash:  271fbbd5
+```
+
+**Summary table:**
+
+| Metric | Value |
+|---|---|
+| Rules total | 6 |
+| Rules evaluated | 5 |
+| Rules skipped | 1 (R002) |
+| Orphaned resources found | 138 |
+| Drift items found | 1 |
+| Compliance items found | 4 |
+| Total estimated savings | **$3,190/mo** |
+
+**Per-rule status line:**
+
+```
+R001 ✓  R002 STATUS=SKIPPED REASON=resourcechanges-unavailable  R003 ✓  R004 ✓  R005 ✓  R006 ✓
+```
+
+**Top of the findings table** (sorted: orphaned → drift → compliance, then savings desc):
+
+| Category | Rule | Type | Resource Group | $/mo |
+|---|---|---|---|---:|
+| orphaned | R001 / R006 | `microsoft.containerservice/managedclusters` | `aks01day2-rg` | 500 |
+| orphaned | R001 / R006 | `microsoft.containerservice/managedclusters` | `aks02day2-rg` | 500 |
+| orphaned | R001 / R006 | `microsoft.containerservice/managedclusters` | `aksnapday2-rg` | 500 |
+| orphaned | R001 / R006 | `microsoft.network/loadbalancers` | `MC_aks02day2-rg_…` | 30 |
+| orphaned | R001 / R006 | `microsoft.storage/storageaccounts` | `az-foundry-rg` | 20 |
+| drift | R003 | `microsoft.network/networksecuritygroups` | `MC_aks02day2-rg_…` | 0 |
+| compliance | R004 | `microsoft.containerservice/managedclusters` | `aks01day2-rg` | 0 |
+
+**Final line printed by the agent:**
+
+```
+Proposed PR content written to exports/proposed-pr/CLEAN-20260514-prod-271fbbd5.md
+```
+
+### Interpreting the findings
+
+A few things to expect — surfaced by the run above — that are not bugs:
+
+- **R001 and R006 deliberately overlap.** R001 flags resources missing `Owner`/`CostCenter` tags;
+  R006 flags resources not declared in the IaC repo. A single untagged-and-undeclared resource will
+  appear under **both** rules. In the run above, 77 R001 hits + 61 R006 hits = 138 orphan rows for
+  ~80 unique resources. The proposed-PR section deduplicates by resource ID per remediation
+  template, so the actual cleanup list is shorter than the findings table suggests.
+- **R002 is `SKIPPED` on most subscriptions out of the box.** R002 reads from the ARG `resourcechanges`
+  table, which depends on Azure Change Analysis being enabled. When it is not, ARG returns
+  `Operator_FailedToResolveEntity 'timestamp'` (or a table-not-found error) — the agent then emits
+  `STATUS=SKIPPED REASON=resourcechanges-unavailable` per [hard rule
+  #10](.github/copilot/agents/weekly-cleanup.agent.md) and continues. R001 + R006 still cover the
+  same orphan space, just without a "last activity" filter.
+- **Drift findings without a savings number are still worth attention.** R003 (NSG drift) and R004
+  (missing diagnostic settings) carry $0 in the savings column because their value is operational
+  (consistency, auditability) rather than cost. The single R003 hit above is one NSG rule on the
+  AKS-managed `MC_*` NSG that does not match the IaC source — the kind of drift that creeps in via
+  portal edits.
+- **`MC_*` resource groups appear in scope when an AKS cluster RG is allowlisted.** Substring matching
+  on the `rg_include` list (per skill spec) intentionally pulls in the AKS-created infra RG so its
+  load balancers, NSGs, and public IPs are scanned alongside the user-managed RG. If you want to
+  exclude them, add `MC_` to `rg_exclude` in your `prod.values.yaml`.
+- **Savings are an estimate, not a quote.** `savings_rate_map` in the runbook is a
+  per-resource-type rough monthly cost. Update it to match your tier; do not treat the
+  `$3,190/mo` headline as a forecast. Resources whose type is not in the map score `$0`, which is
+  why ~80 of the 138 orphan rows show 0.
+
+### What to do with the proposed PR
+
+`exports/proposed-pr/CLEAN-<run_id>.md` is a reviewable artifact — it is not a side-effect of
+deployment. Recommended next steps:
+
+1. **Open the markdown** and skim the cleanup table from top to bottom. The highest-savings rows
+   are at the top by design; address them first.
+2. **Decide per resource:** delete (genuinely orphaned), tag (legitimate but missing
+   `Owner`/`CostCenter`), or codify (live but missing from IaC — add a Bicep/Terraform definition).
+3. **Apply the ARM patches** referenced under `remediation/` manually (`az deployment group create
+   --template-file remediation/<file>.json`) or wire the markdown into a GitHub Actions workflow
+   that calls `gh pr create` against your IaC repo. The agent will not do either step for you.
+4. **Re-run the scan next week.** Findings you addressed should drop off; new drift will appear.
+   The week-over-week delta is the metric that matters, not the absolute count on day one.
 
 ## Install
 
@@ -143,8 +277,10 @@ VS Code chat:
 GitHub Copilot CLI:
 
 ```
-gh copilot -p "Run weekly cleanup scan for scope prod"
+copilot -p "Run weekly cleanup scan for scope prod"
 ```
+
+> **CLI users:** see [Copilot CLI usage notes](../README.md#copilot-cli-usage-notes) — `gh copilot` has a quoting bug on Windows when `copilot` lives on a path with spaces, `@agent` mentions don't work in the CLI, and first runs take a few minutes.
 
 ## Layout
 
@@ -185,14 +321,22 @@ SRE-PoC-12-weekly-cleanup-prs/
 | Never deploys; only proposes | Agent hard rules + this README |
 | Savings estimate per item | `runbooks/prod.yaml` `savings_rate_map` |
 
-## Out of scope (future enhancements)
+## Roadmap to the intended end state
+
+The PoC delivers the deterministic scan + propose loop. To reach the [intended end
+state](#intended-end-state), wire these pieces into your environment:
 
 - **GitHub PR creation** — composing the PR content is in scope for v1; actually opening a GitHub
   Pull Request requires a separate agent or GitHub Actions integration. The ARM MCP server does not
   provide GitHub PR APIs. Wire a workflow that triggers on a new file in `exports/proposed-pr/`
-  and calls `gh pr create`.
+  and calls `gh pr create --body-file` on it.
 - **Automated scheduling** — v1 is manually invoked. A GitHub Actions schedule or Azure Pipelines
-  cron can automate the weekly `scan` trigger.
+  cron can automate the weekly `scan` trigger; the runbook's `schedule` key already records the
+  intended cadence.
 - **Auto-merge / auto-apply** — v1 is propose-only; humans review and apply ARM patches.
+  A future revision could auto-apply low-risk patches (e.g. enabling diagnostic settings) behind
+  a CODEOWNERS gate, while keeping destructive cleanup human-approved.
 - **R002 Change Analysis enablement** — the `resourcechanges` table requires Azure Change Analysis
-  to be enabled on the subscription. See ratification #1 for the `skip_if_unavailable` policy.
+  to be enabled on the subscription. Until it is, R002 will reliably report
+  `STATUS=SKIPPED REASON=resourcechanges-unavailable` per ratification #1 — see
+  [Interpreting the findings](#interpreting-the-findings) above.

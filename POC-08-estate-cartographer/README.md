@@ -121,8 +121,10 @@ VS Code chat:
 GitHub Copilot CLI:
 
 ```
-gh copilot -p "Map the Azure estate for scope prod"
+copilot -p "Map the Azure estate for scope prod"
 ```
+
+> **CLI users:** see [Copilot CLI usage notes](../README.md#copilot-cli-usage-notes) — `gh copilot` has a quoting bug on Windows when `copilot` lives on a path with spaces, `@agent` mentions don't work in the CLI, and first runs take a few minutes.
 
 Drilldown on a specific resource:
 

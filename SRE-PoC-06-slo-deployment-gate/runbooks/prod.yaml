@@ -20,8 +20,27 @@ rg_exclude: ${rg_exclude}
 # approval_required_below_pct: if budget is below this value, approval is required.
 # simulated_budget_pct: v1 only — hardcoded test value; replace with live integration.
 #
-# operator must keep slo_targets in sync with your SLO platform.
+# IMPORTANT (SRE-PoC-6): the entries below are ILLUSTRATIVE EXAMPLES. The services
+# `payments-api`, `checkout-api`, and `auth-service` are NOT guaranteed to exist
+# in your subscription. R001 will return zero rows for any service that does not
+# have an App Insights component or Log Analytics workspace tagged with
+# `slo_service: <name>`, and the gate will fail-closed (BLOCK) for that service.
+#
+# To use the gate against a real service:
+#   1. Add an entry below keyed by your service name.
+#   2. Tag the corresponding App Insights component:
+#        az resource tag --ids <component-id> --tags slo_service=<your-service>
+#   3. Invoke with `service <your-service>` (not `payments-api`).
 slo_targets:
+  # Generic placeholder. Rename to a service that exists in your tenant.
+  sample-service:
+    budget_threshold_pct: 50.0
+    window_days: 30
+    approval_required_below_pct: 75.0
+    simulated_budget_pct: 72.4          # v1 test value — above threshold → ALLOW
+
+  # Example entries (kept for the test scenarios in exports/test-run.md).
+  # Remove or rename if these services do not exist in your subscription.
   payments-api:
     budget_threshold_pct: 50.0
     window_days: 30

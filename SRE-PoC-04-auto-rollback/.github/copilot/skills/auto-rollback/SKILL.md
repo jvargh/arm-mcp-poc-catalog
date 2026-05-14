@@ -11,13 +11,13 @@ Inputs:
 - `scope`: name of a runbook under `runbooks/<scope>.yaml`. Defaults to `prod`.
 - `verb`: one of `watch` (default), `rollback`, `cancel`.
 
-## Step 1 — Load configuration (no LLM judgement)
+## Step 1 - Load configuration (no LLM judgement)
 
 1. Read `runbooks/<scope>.yaml` as raw text. If a sibling `runbooks/<scope>.values.yaml`
    exists, parse it and substitute every `${key}` token in the runbook text with the
    corresponding value. Then parse the substituted text as YAML.
    If `<scope>.values.yaml` is missing, abort with the literal message:
-   `ABORT: runbooks/<scope>.values.yaml missing — copy <scope>.values.yaml.example and fill in real values`.
+   `ABORT: runbooks/<scope>.values.yaml missing - copy <scope>.values.yaml.example and fill in real values`.
 2. Extract from the parsed runbook:
    - `subscription_id`, `resource_group`
    - `deployment_name`
@@ -30,7 +30,7 @@ Inputs:
 4. Compute `run_id = "ROLL-" + UTC date YYYYMMDD + "-" + scope + "-" + ruleset_hash8`.
 5. Initialise timeline buffer and `rollback_attempts_remaining = max_rollback_attempts`.
 
-## Step 2 — Compute run_id and open timeline
+## Step 2 - Compute run_id and open timeline
 
 1. Emit the opening timeline line:
    ```
@@ -39,7 +39,7 @@ Inputs:
    Format: `[YYYY-MM-DDTHH:MM:SSZ] ACTION: description (status)`.
    Status values: `IN_PROGRESS`, `OK`, `FAIL`, `SKIPPED`, `HALTED`, `PENDING_CONFIRM`.
 
-## Step 3 — Watch deployment progress
+## Step 3 - Watch deployment progress
 
 1. Call `get_arm_template_deployment_status` with:
    - `deployment_name` from runbook
@@ -62,7 +62,7 @@ Inputs:
    - Proceed to Step 5 (Trigger rollback).
 6. If the deployment reached `Failed` or `Canceled`, proceed directly to Step 5.
 
-## Step 4 — Health gate evaluation (rule_id order)
+## Step 4 - Health gate evaluation (rule_id order)
 
 Run **only when** the deployment settled with `Succeeded`. If already heading to
 rollback (Step 5), skip this step.
@@ -71,7 +71,7 @@ For each rule in `rules.yaml` **in rule_id order** (R001 → R002 → R003 → R
 
 1. Take the literal `kql` from the rule. Substitute `${resource_group}` and
    `${subscription_id}` from the runbook values. **Do not call `generate_query`
-   or `validate_query`** — go directly to `execute_query`.
+   or `validate_query`** - go directly to `execute_query`.
 2. Call `execute_query` with the substituted KQL and `subscriptions=[subscription_id]`.
 3. Emit timeline line:
    ```
@@ -91,7 +91,7 @@ For each rule in `rules.yaml` **in rule_id order** (R001 → R002 → R003 → R
    ```
    Proceed to Step 5.
 
-## Step 5 — Cancel flow
+## Step 5 - Cancel flow
 
 Triggered automatically by the orchestrator on:
 - Deployment `Failed` / `Canceled` state (Step 3).
@@ -126,7 +126,7 @@ Also triggered manually by the user invoking the `cancel` verb.
 5. If verb is `cancel` (manual invocation), go to Step 7 after cancel completes.
 6. Otherwise (auto-cancel path), proceed to Step 6.
 
-## Step 6 — Trigger rollback
+## Step 6 - Trigger rollback
 
 Runs only after a successful cancel (auto path). Attempts to redeploy `last_good_template_ref`.
 
@@ -136,7 +136,7 @@ Runs only after a successful cancel (auto path). Attempts to redeploy `last_good
    ```
 2. **v1 SIMULATED ONLY.** Write the would-deploy details to the timeline:
    ```
-   [<utc_now>] ACTION: deploy-lkg [SIMULATED — NOT EXECUTED in v1] template=<ref> params=<params_file> mode=Complete (IN_PROGRESS)
+   [<utc_now>] ACTION: deploy-lkg [SIMULATED - NOT EXECUTED in v1] template=<ref> params=<params_file> mode=Complete (IN_PROGRESS)
    ```
    Do **not** call `create_template_deployment` in v1.
 3. Simulate the LKG deployment completing. Emit:
@@ -162,7 +162,7 @@ Runs only after a successful cancel (auto path). Attempts to redeploy `last_good
      ```
      Proceed to Step 7 (status = `HALTED`).
 
-## Step 7 — Render output
+## Step 7 - Render output
 
 1. Read `templates/output-timeline.md`. Substitute `{{placeholders}}` with run values.
    Write the full timeline buffer into `{{timeline_block}}`.
@@ -179,7 +179,7 @@ Runs only after a successful cancel (auto path). Attempts to redeploy `last_good
 - `execute_query` error for a health-gate rule: emit rule result as `FAIL` with
   `reason=query-error` and continue.
 - `cancel_arm_template_deployment` error: emit
-  `[<utc_now>] ACTION: cancel-error error="<msg>" (FAIL)` — do not retry cancel;
+  `[<utc_now>] ACTION: cancel-error error="<msg>" (FAIL)` - do not retry cancel;
   escalate to operator.
 - `rules.yaml` unreadable: abort with literal message `ABORT: rules.yaml unreadable`.
 

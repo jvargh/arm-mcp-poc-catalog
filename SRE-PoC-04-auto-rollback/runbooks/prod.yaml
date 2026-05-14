@@ -1,9 +1,9 @@
 # Scope definition for the `prod` auto-rollback run.
 #
-# This file is a TEMPLATE — committed to git, contains no environment-specific
+# This file is a TEMPLATE - committed to git, contains no environment-specific
 # values. Real values live in a sibling `prod.values.yaml` (gitignored).
 # At load time the skill substitutes `${key}` tokens from prod.values.yaml.
-# See SKILL.md "Step 1 — Load configuration".
+# See SKILL.md "Step 1 - Load configuration".
 
 scope: prod
 

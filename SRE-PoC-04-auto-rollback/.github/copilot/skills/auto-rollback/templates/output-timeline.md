@@ -1,4 +1,4 @@
-# Auto-Rollback Timeline — {{run_id}}
+# Auto-Rollback Timeline - {{run_id}}
 
 **Deployment:** {{deployment_name}}
 **Scope:** {{scope}}

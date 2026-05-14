@@ -1,7 +1,7 @@
-# Auto-Rollback Orchestrator — Rule Pack v1
+# Auto-Rollback Orchestrator - Rule Pack v1
 # DO NOT EDIT during a run. The agent hashes this file to derive the run_id.
 # Each rule has: id, title, severity, kql.
-# kql is executed verbatim via execute_query — NO generate_query, NO validate_query.
+# kql is executed verbatim via execute_query - NO generate_query, NO validate_query.
 # All rules target the deployment's resource_group and subscription_id (injected at runtime).
 
 version: 1
@@ -59,7 +59,7 @@ rules:
     severity: critical
     description: >
       Fails if any resource in the target resource group is in a Failed, Canceled,
-      or Deleting provisioningState — indicating a partially-broken deployment.
+      or Deleting provisioningState - indicating a partially-broken deployment.
     kql: |
       Resources
       | where resourceGroup =~ '${resource_group}'

@@ -7,6 +7,61 @@ deterministic strategy recommendation before every deploy.
 
 Backed by the [Azure Resource Manager MCP Server](https://aka.ms/JoinARMMCP).
 
+## Purpose
+
+When an SRE is about to deploy an ARM template that touches shared
+infrastructure — custom domains, managed identities, Key Vault certs, role
+assignments, VNets / NSGs / private DNS zones — the question every change
+advisory board (and every on-call manager at 2 a.m.) asks is the same:
+*what could this change break that isn't in the template itself?* Today that
+hunt means hand-running half a dozen Resource Graph queries, eyeballing
+NSGs and private DNS, and guessing at a deployment strategy on instinct.
+
+This PoC collapses that hunt into a single chat verb. It parses the target
+ARM template, runs a fixed pack of five ARG rules over the live
+subscription, scores the user-facing blast radius across DNS, identity,
+certs, RBAC, and dependency edges, and emits a deterministic markdown
+report with a recommended deployment strategy
+(`canary` / `blue-green` / `staggered`). Same template + same rule pack +
+same UTC date ⇒ same `run_id` and byte-identical report ⇒ replayable in a
+change-management ticket.
+
+## Intended end state
+
+When this PoC is installed and configured against a real subscription, the
+day-2 experience is:
+
+- Before submitting an ARM deployment, an on-call or release engineer types
+  `@blast-radius-simulator simulate scope prod` (VS Code Chat) or
+  `copilot -p "Simulate blast radius for scope prod"` (CLI).
+- Within a few model turns (10 ARG round-trips per fresh run — one
+  `validate_query` + one `execute_query` per rule), they get a one-screen
+  markdown report listing the resources in the template, the five
+  user-impact categories ranked by `category_risk`, the dependency edges
+  that share a VNet / NSG / private DNS zone with the change, and a total
+  integer `risk_score` mapped to a deployment strategy.
+- The report is **also** written to
+  `exports/blast-radius-<scope>-latest.md` on every run so successive
+  simulations `git diff` cleanly and the file can be attached to a
+  change-management ticket.
+- An auditor can later reproduce the assessment: the `run_id`
+  (`BLAST-{YYYYMMDD}-{scope}-{sha256(rules.yaml)[:8]}`) plus the rendered
+  report pin down exactly which rule pack ran, against which subscription,
+  on which UTC date.
+- If the recommended strategy looks too aggressive (or too conservative)
+  the engineer either tunes thresholds (see *Tuning thresholds for your
+  environment*) or drills down with
+  `@blast-radius-simulator drilldown <category>` to inspect the actual
+  affected resources before proceeding.
+- No deployment is ever made by the agent. `create_template_deployment`
+  is in the allowlist for a future native what-if pass but is **blocked
+  in v1** by the agent's hard rules — see *Known limitations*.
+
+The 2026-05-14 live run (see [Sample run](#sample-run-default-config) and
+[Lessons from the 2026-05-14 live run](#lessons-from-the-2026-05-14-live-run))
+is the canonical reference for what a healthy end-to-end execution looks
+like.
+
 ## What it does
 
 1. Reads a target ARM template path from the runbook (`template_path`).
@@ -26,6 +81,33 @@ Backed by the [Azure Resource Manager MCP Server](https://aka.ms/JoinARMMCP).
 * Sort order is pinned: descending by `category_risk`, ties broken by `rule_id` ascending.
 * Strategy recommendation is a pure threshold lookup in `runbooks/prod.yaml`.
 * Run ID is deterministic: `BLAST-{YYYYMMDD}-{scope}-{sha256(rules.yaml)[:8]}`.
+
+## Expected outcomes
+
+| Rule | Healthy result | Skipped / invalid result | What to do when populated |
+| --- | --- | --- | --- |
+| R001 — DNS / endpoint | Front Doors, App Gateways, App Services, and CDN profiles in scope. Empty subscription ⇒ row with `0` count. | `STATUS=INVALID` if ARG auth fails — re-run `az login` with Reader + Resource Graph Reader. | Verify your custom-domain TTLs and Front Door / App Gateway probes can survive a brief endpoint flip during the deploy. |
+| R002 — Identity rotation | User-assigned managed identities in scope. Empty ⇒ row with `0` count. | `STATUS=INVALID` if ARG auth fails. | Confirm no other resource references the identity by `clientId` / `principalId` — rotation invalidates issued tokens. |
+| R003 — Cert regen | Key Vaults, Web certificates, and App Gateway certs in scope. Empty ⇒ row with `0` count. | `STATUS=INVALID` if ARG auth fails. | Schedule the deploy outside the cert auto-rotation window; verify consumers are watching for cert refresh. |
+| R004 — RBAC | Role assignments in scope (often hundreds in a non-empty sub). | `STATUS=SKIPPED REASON=authorizationresources-unavailable` on subs without the `AuthorizationResources` table — total score excludes R004 per ratification #2. | Spot-check whether any high-privilege assignment principal is also referenced by the change set; otherwise the volume is informational. |
+| R005 — Dependency edge | VNets, NSGs, route tables, private DNS zones, and private endpoints in scope. Listed individually under **Dependency Edges** in the report. | `STATUS=INVALID` if ARG auth fails. | Read the *Dependency Edges* section — those are the resources that share blast radius with your change. Treat that list, not the integer score, as the operational deliverable. |
+
+A run is **successful** when:
+
+- The rendered report's first H1 is exactly `# Blast-Radius Simulation Report`.
+- All five rules appear in the *Impact by Category* table — either with
+  a `category_risk` integer or a `STATUS=SKIPPED|INVALID` row at the
+  bottom.
+- `Total risk score` is an integer (no decimals) and `Recommended
+  strategy` is exactly one of `canary`, `blue-green`, or `staggered`
+  (pure threshold lookup from `runbooks/<scope>.yaml`).
+- The report has been written to
+  `exports/blast-radius-<scope>-latest.md`.
+- The `run_id` matches `BLAST-{YYYYMMDD}-{scope}-{ruleset_hash[:8]}` and
+  reproduces byte-for-byte for the same `rules.yaml` and same UTC date.
+- `create_template_deployment` was **not** invoked
+  (`get_arm_template_deployment_status` is intentionally absent from the
+  allowlist — it must not appear in the trace either).
 
 ## How it works (end-to-end flow)
 
@@ -65,6 +147,9 @@ What happens after you type `@blast-radius-simulator simulate scope prod`:
   **intentionally not called in v1**. Per ratification #3, the hard rule in `agent.md`
   forbids invoking it in `simulate` mode. The report is derived from ARG queries
   against the parsed template.
+* **Rules are subscription-wide surface scans**, not template-delta queries
+  (see *How to read the score* below). v2 will tighten this once native what-if
+  is wired up.
 * `authorizationresources` table (R004) may not be available in all subscriptions.
   The rule emits `STATUS=SKIPPED REASON=authorizationresources-unavailable` and
   continues — per ratification #2.
@@ -154,17 +239,206 @@ VS Code chat:
 @blast-radius-simulator simulate scope prod
 ```
 
-GitHub Copilot CLI:
-
-```
-gh copilot -p "Simulate blast radius for scope prod"
-```
-
-Drilldown on one impact category:
+Drilldown on one impact category (VS Code chat):
 
 ```
 @blast-radius-simulator drilldown dns_endpoint
 ```
+
+GitHub Copilot CLI:
+
+```
+copilot -p "Simulate blast radius for scope prod"
+```
+
+Drilldown on one impact category (CLI):
+
+```
+copilot -p "Drilldown blast radius category dns_endpoint for scope prod"
+```
+
+CLI notes:
+
+* Use the standalone `copilot` binary directly. The `gh copilot` wrapper
+  re-execs `copilot` through cmd without quoting, so it fails if your `copilot`
+  resolves to a path containing spaces (e.g. the VS Code Insiders shim under
+  `...\AppData\Roaming\Code - Insiders\...`). If your `copilot` lives on a
+  space-free path, `gh copilot -p "..."` is equivalent.
+* `@agent-name` mentions are a VS Code Copilot Chat convention. The CLI does
+  not parse them, so describe the task in plain English instead.
+* First runs are slow (3–5 min on a busy subscription): the agent makes one
+  `validate_query` + one `execute_query` per rule (10 ARG round-trips), and
+  large result sets (e.g. R004 role assignments, R005 dependency edges) get
+  serialized back into context.
+
+The rendered report is **also** written to `exports/blast-radius-<scope>-latest.md`
+on every run, so you can `git diff` successive simulations or attach the file
+to a change-management ticket. See the *Sample run* section below for an
+annotated example of what the output looks like and how to interpret it.
+
+## Sample ARM template (`templates/sample-webapp.json`)
+
+A reference template is committed at `templates/sample-webapp.json` and wired in
+as the default `template_path`. It is intentionally designed to exercise **all
+five** impact rules so the simulator produces a non-zero risk score on a first
+run, without requiring you to bring your own template.
+
+Resources in the sample (and the rule each one trips):
+
+| Resource | Type | Rule | Category |
+| --- | --- | --- | --- |
+| `blastradius-demo-app` | `Microsoft.Web/sites` | R001 | dns_endpoint |
+| `blastradius-demo-app-plan` | `Microsoft.Web/serverfarms` | (support) | (none) |
+| `blastradius-demo-uami` | `Microsoft.ManagedIdentity/userAssignedIdentities` | R002 | identity_rotation |
+| `blastradius-demo-kv` | `Microsoft.KeyVault/vaults` | R003 | cert_regen |
+| role assignment (Reader on RG) | `Microsoft.Authorization/roleAssignments` | R004 | rbac |
+| `blastradius-demo-vnet` | `Microsoft.Network/virtualNetworks` | R005 | dependency_edge |
+
+Notes:
+
+* The Web App uses a **user-assigned managed identity** and depends on the Key
+  Vault and VNet, so dependency edges are visible in the rendered report.
+* `readerPrincipalId` defaults to the zero GUID. Replace it with a real object ID
+  before any actual deployment. The simulator does not deploy the template (per
+  the v1 hard rule), so the zero GUID is safe for `simulate` runs.
+* To point the simulator at your own template instead, edit `template_path` in
+  `runbooks/prod.values.yaml`.
+
+## Sample run (default config)
+
+Running `simulate scope prod` against the committed `templates/sample-webapp.json`
+on a typical demo subscription produced this report
+([`exports/blast-radius-prod-latest.md`](./exports/blast-radius-prod-latest.md)):
+
+| Rule | Category | Weight | Affected | Category risk |
+| --- | --- | ---: | ---: | ---: |
+| R004 | rbac              |  9 | 167 | 1503 |
+| R005 | dependency_edge   |  8 |  35 |  280 |
+| R002 | identity_rotation | 10 |  18 |  180 |
+| R001 | dns_endpoint      | 15 |   4 |   60 |
+| R003 | cert_regen        | 12 |   2 |   24 |
+
+**Total: 2047 → `high` → recommended strategy: `staggered`** (Run ID
+`BLAST-20260514-prod-d916b5fb`, ruleset hash `d916b5fb`, change_type `add-only`).
+
+Reading the output:
+
+* R004 dominates because the demo subscription has 167 role assignments. With
+  default weights this swamps every other signal — typical for any real Azure
+  subscription. Adjust weights or scope the KQL (see *Tuning thresholds* below)
+  if you want R001 (DNS) or R003 (certs) to drive the score.
+* R005's 35 dependency edges are listed individually under **Dependency Edges**
+  in the report so you can scan the actual VNets, NSGs, private DNS zones, and
+  private endpoints that share blast radius with your change.
+* `Estimated change type: add-only` here means the demo template's resource
+  names (`blastradius-demo-app`, `blastradius-demo-uami`, …) don't match
+  anything that already exists in the target subscription — i.e. this would
+  be a green-field deploy.
+
+## Lessons from the 2026-05-14 live run
+
+The first end-to-end live run against subscription `463a82d4-…aa93`
+(verbatim report preserved at
+[`exports/blast-radius-prod-latest.md`](./exports/blast-radius-prod-latest.md),
+`run_id: BLAST-20260514-prod-d916b5fb`, ruleset hash `d916b5fb`)
+surfaced four operator-facing takeaways that aren't obvious from the
+spec alone:
+
+1. **R004 dominates the score on any populated subscription.** The demo
+   sub returned 167 role assignments → `9 × 167 = 1503` of the 2047
+   total (~73% of the score). With default weights and thresholds
+   (`low: 20`, `medium: 60`) this lands every non-trivial production
+   sub in `high → staggered` immediately. **Action:** either accept
+   "high → staggered" as the conservative v1 default, or scope R004's
+   KQL in `rules/rules.yaml` (e.g.
+   `| where resourceGroup in~ ('rg-app-prod', 'rg-shared-prod')`)
+   before relying on the score for fine-grained signal. See
+   [Tuning thresholds for your environment](#tuning-thresholds-for-your-environment).
+2. **The *Dependency Edges* list is the most operationally useful
+   artifact.** The run enumerated 35 individual NSGs, VNets, private
+   DNS zones, and private endpoints — including `aks-vnet-*`,
+   `privatelink.database.windows.net`, `pe-sql-*`, etc. — that share
+   blast radius with the demo template. Even when the integer score is
+   conservative-by-design, this list reliably names the "things to
+   watch" during the deploy. Treat it, not the score, as the day-2
+   deliverable to attach to the change ticket.
+3. **`add-only` is a coarse name-match heuristic, not a true diff.**
+   The demo template's resource names (`blastradius-demo-*`) don't
+   collide with anything in the target sub, so the report rendered
+   `Estimated change type: add-only`. Operators working with templates
+   whose resources share names with existing infra should expect
+   `update` or `mixed` — and remember the v1 rule queries are still
+   subscription-wide *surface* scans, not delta queries (see
+   [How to read the score](#how-to-read-the-score-important)). Native
+   what-if via `create_template_deployment` is reserved for v2.
+4. **Copilot CLI does not auto-load `.vscode/mcp.json`.** The CLI
+   reads `~/.copilot/mcp.json` only. Without the ARM MCP server
+   registered there the four tools in the agent allowlist
+   (`generate_query`, `validate_query`, `execute_query`,
+   `create_template_deployment`) are all absent and the deterministic
+   flow cannot run — the run silently degrades or aborts. **Fix:**
+   copy the `Azure Resource Manager MCP Server` block from
+   `.vscode/mcp.json` into `~/.copilot/mcp.json` and restart the CLI
+   before invoking `simulate`. VS Code Chat is unaffected. (Same
+   gotcha as `SRE-PoC-01-incident-triage`; documented under
+   [Install](#install).)
+
+The run also confirmed that on this subscription
+`AuthorizationResources` is queryable — R004 returned 167 rows rather
+than `STATUS=SKIPPED REASON=authorizationresources-unavailable`.
+Tenants without that table will see R004 contribute `0` to the total
+and appear with a `SKIPPED` row at the bottom of the impact table; the
+other four rules still produce a meaningful score.
+
+## How to read the score (important)
+
+> **The v1 rules are subscription-wide surface scans, not change-delta queries.**
+> Each rule's `affected_resource_count` is the total number of resources of that
+> *type* that exist in the configured subscription(s) — it is **not** the number
+> of resources this specific template will create, change, or break.
+
+What that means in practice:
+
+* The score represents the **potential blast radius surface** in scope (i.e. how
+  much user-facing area could in theory be perturbed if the change misbehaves),
+  not the precise delta from this template.
+* On any non-empty subscription you should expect the default thresholds
+  (`low_threshold: 20`, `medium_threshold: 60`) to land you in `high → staggered`
+  almost immediately. That is the safe default — see *Tuning thresholds* below
+  if you want a finer-grained signal.
+* `Estimated change type` is computed by name-matching the template's resource
+  names against ARG. `add-only` means **no resource in ARG shares a name with a
+  resource in the template** — it is a coarse heuristic, not a true diff. A
+  v2 pass plugged into native what-if (`create_template_deployment`) will replace
+  this with the real resource-level delta.
+
+## Tuning thresholds for your environment
+
+Default thresholds (`low: 20`, `medium: 60`) are set so that **anything
+non-trivial trips `high`**. That is intentionally conservative for the PoC.
+For day-to-day use, calibrate against a clean baseline run:
+
+1. Run `simulate scope prod` once against a **no-op template** (or just an empty
+   `resources: []`) to capture the baseline subscription surface score.
+2. Set `low_threshold` ≈ baseline × 1.1 and `medium_threshold` ≈ baseline × 1.5
+   in `runbooks/prod.yaml` so the bands reflect *deviation from baseline*, not
+   absolute surface area.
+3. Or scope the KQL in `rules/rules.yaml` to specific resource groups
+   (e.g. `| where resourceGroup in~ ('rg-app-prod', 'rg-shared-prod')`) to
+   restrict each rule to the change's actual blast radius. Editing KQL changes
+   `ruleset_hash8` and therefore `run_id` — that's intentional and provides an
+   audit trail of which rule pack produced which report.
+
+## Troubleshooting
+
+| Symptom | Likely cause / fix |
+| --- | --- |
+| `ABORT: runbooks/prod.values.yaml missing …` | First-time setup not done. `Copy-Item runbooks/prod.values.yaml.example runbooks/prod.values.yaml` and fill in your sub ID + template path. |
+| `ABORT: template_path not set in runbook or file not found at <path>` | `template_path` in `prod.values.yaml` is empty or points at a non-existent file. Paths are relative to the workspace root. |
+| Score is enormous (thousands) on first run | Expected — see *How to read the score*. Calibrate per *Tuning thresholds*. |
+| R004 row shows `STATUS=SKIPPED REASON=authorizationresources-unavailable` | Your tenant/subscription doesn't expose the `AuthorizationResources` table to ARG. Per the agent's hard rule the run continues; total score just excludes R004. |
+| All rules show `STATUS=INVALID` | ARM MCP / ARG auth failed. Re-run `az login` with Reader + Resource Graph Reader on the target subscription, then retry. The agent does not retry on its own. |
+| `run_id` changed but I didn't touch the runbook | You (or someone) edited `rules/rules.yaml`. The hash in `run_id` is `sha256(rules.yaml)[:8]` — that's the audit signal working as designed. |
 
 ## Layout
 
@@ -188,6 +462,8 @@ SRE-PoC-08-blast-radius-simulator/
   runbooks/
     prod.yaml                           # committed template (placeholders only)
     prod.values.yaml.example            # committed schema reference
+  templates/
+    sample-webapp.json                  # demo ARM template exercising R001–R005
   exports/
     .gitkeep
     test-run.md                         # simulated test outcome

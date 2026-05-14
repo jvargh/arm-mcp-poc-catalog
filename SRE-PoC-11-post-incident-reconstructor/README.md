@@ -1,21 +1,57 @@
 # Post-Incident "What Changed" Reconstructor (ARM MCP PoC — SRE-PoC-11)
 
-A Copilot CLI / VS Code chat agent that reconstructs the **full change timeline**
-(ARM deployments, resource property changes, and RBAC changes) for a given incident
-time window and scope — producing a **byte-near-identical postmortem artifact every time**
-it is run with the same inputs.
+A Copilot CLI / VS Code chat agent that answers the very first question every
+SRE asks during an incident: **"what actually changed in our Azure environment
+between time X and time Y?"** — and answers it the *same way every time*, so the
+output is safe to paste straight into a postmortem.
 
 Backed by the [Azure Resource Manager MCP Server](https://aka.ms/JoinARMMCP).
 
-## What it does
+## Why this exists
 
-1. Loads a fixed rule pack (`skills/post-incident-reconstructor/rules/rules.yaml`) —
-   4 ARG queries with **pre-canned KQL** covering deployments, property changes, RBAC, and correlation.
-2. For every rule: `validate_query` → `execute_query` (ARM MCP).
-3. Merges rows from all rules into a single change timeline.
-4. Sorts the timeline **ascending by timestamp** (earliest event first — narrative flow for postmortems).
-5. Renders the timeline into a **fixed markdown template** (`templates/output-report.md`).
-6. Supports `drilldown <deployment-id>` to focus on one deployment and its correlated changes.
+Reconstructing change history during a postmortem is normally a manual, error-prone
+scramble across the Azure portal, deployment history blades, Activity Log, and
+RBAC audit. Different people produce different timelines from the same incident.
+
+This PoC turns that step into a **single chat command** with a **fixed rule pack**
+of pre-vetted Azure Resource Graph (ARG) queries, a deterministic merge/sort
+procedure, and a literal markdown template. Same inputs → byte-near-identical
+output. No LLM-generated KQL on the hot path.
+
+## Intended end state
+
+After a successful run you get a **postmortem-ready markdown report** that contains:
+
+- A **Run ID** of the form `POST-{YYYYMMDD}-{scope}-{ruleset_hash8}` — identical
+  inputs (rule pack + scope + date) always produce the same Run ID, so reviewers can
+  trust that two reports with the same Run ID are byte-comparable.
+- An **Incident Summary** table (window start/end, scope).
+- A **Rules Summary** table (rules total / evaluated / skipped / invalid, deployments
+  found, change events, RBAC changes).
+- A **Change Timeline** code block with one line per change event, sorted ascending
+  by timestamp, in the canonical format:
+  `[HH:MM:SS UTC] <principal> <action> <resource> (deployment: <id>)`
+- Inline `STATUS=SKIPPED REASON=<table>-unavailable` sentinels wherever an optional
+  ARG table (`resourcechanges`, `authorizationresources`) wasn't populated for the
+  subscription — so reviewers see *why* coverage is incomplete instead of silently
+  missing rows.
+
+Drop the report into the "What changed during the incident" section of your
+postmortem template, or check it into the postmortem repo as a self-contained
+artifact.
+
+## What it does (4-rule pack)
+
+| Rule | Source table | Captures | Skippable? |
+|---|---|---|---|
+| **R001** | `Resources` (deployments) | ARM deployments in window | ❌ no |
+| **R002** | `resourcechanges` | Resource property changes | ✅ yes (table requires Change History) |
+| **R003** | `authorizationresources` | RBAC role assignments | ✅ yes (empty = SKIPPED) |
+| **R004** | `Resources` ⨝ `resourcechanges` | Deployment ↔ change correlation | ❌ no (fails INVALID if `resourcechanges` is off — see ratification notes) |
+
+For every rule the agent: `validate_query` → `execute_query` (ARM MCP) → merge into
+one timeline → sort ascending by timestamp → render via fixed template. Supports a
+`drilldown <deployment-id>` mode to focus on one deployment and its correlated changes.
 
 ## Why the output is deterministic
 
@@ -120,14 +156,76 @@ VS Code chat:
 GitHub Copilot CLI:
 
 ```
-gh copilot -p "Reconstruct the post-incident change timeline for scope prod"
+copilot -p "Reconstruct the post-incident change timeline for scope prod"
 ```
+
+> **CLI users:** see [Copilot CLI usage notes](../README.md#copilot-cli-usage-notes) — `gh copilot` has a quoting bug on Windows when `copilot` lives on a path with spaces, `@agent` mentions don't work in the CLI, and first runs take a few minutes.
 
 Drill-down on one deployment:
 
 ```
 @post-incident-reconstructor drilldown deploy-payments-api-20260510-1403
 ```
+
+## Example: what a real first run looks like
+
+The **happy-path** report (rich window, all tables populated) is the simulated example
+in [`exports/test-run.md`](exports/test-run.md) — multiple deployments, RBAC
+changes, and correlated property changes interleaved in the timeline.
+
+But on the first run against a fresh subscription, you will more often see the
+**sparse / partial-coverage** shape below. This is normal and the report is
+still valid — the SKIPPED sentinels tell you exactly why some signal is missing.
+
+A real run captured on `2026-05-14` against scope `prod`, subscription
+`sub-id`, window `2026-01-01T00:00:00Z → 02:00:00Z`
+produced (Incident Summary section elided for brevity — the live report renders
+the full [`templates/output-report.md`](.github/copilot/skills/post-incident-reconstructor/templates/output-report.md)):
+
+~~~markdown
+# Post-Incident Change Timeline
+
+**Run ID:** POST-20260514-prod-b470ce58
+**Scope:** prod
+**Generated (UTC):** 2026-05-14T02:07:02Z
+**Ruleset hash:** b470ce58
+
+## Rules Summary
+
+| Metric | Value |
+|---|---|
+| Rules total | 4 |
+| Rules evaluated | 1 |
+| Rules skipped | 2 |
+| Rules invalid | 1 |
+| Deployments found | 0 |
+| Change events | 0 |
+| RBAC changes | 0 |
+
+## Change Timeline
+
+```
+STATUS=SKIPPED REASON=resourcechanges-unavailable
+STATUS=SKIPPED REASON=authorizationresources-unavailable
+```
+~~~
+
+How to read this:
+
+- **R001 evaluated, 0 rows** → no ARM deployments occurred in the window. The query
+  ran successfully against the `Resources` table.
+- **R002 SKIPPED** → the `resourcechanges` table is not populated for this subscription
+  (Change History is not enabled). Sentinel emitted; agent continued.
+- **R003 SKIPPED** → no RBAC role assignments were created in the window (empty
+  result set on a skippable rule is treated as SKIPPED).
+- **R004 INVALID** → R004 joins to `resourcechanges`, so when that table is
+  unavailable the *whole* R004 query fails to resolve and is marked INVALID. This
+  is **expected** behaviour today — see ratification note below. R004's signal is
+  a strict superset of R001 + R002, so when R002 is off you lose nothing
+  irreplaceable.
+
+If your first report looks like this, the **fix is on the Azure side** (enable
+Change History — see below), not in the rule pack.
 
 ## Layout
 
@@ -179,9 +277,31 @@ Per ratifications #1 and #2 from `copilot-bishop-ratifications-2026-05-12.md`:
 - **R003 (`authorizationresources`)** is similarly marked `skip_if_unavailable: true`.
   If unavailable, the skill emits `STATUS=SKIPPED REASON=authorizationresources-unavailable`
   and continues.
+- **R004 cascades from R002.** R004 inner-joins the `Resources` deployments table to
+  `resourcechanges` for correlation. When `resourcechanges` is unavailable, R004's
+  KQL fails to resolve at validate/execute time (typical error:
+  `'extend' operator: Failed to resolve scalar expression named 'correlationId'`) and
+  is recorded as **INVALID** — *not* SKIPPED — because `skip_if_unavailable: false`.
+  This is intentional and matches the agent's failure-handling contract: only R002
+  and R003 may be SKIPPED. Coverage impact is low: every deployment row R004 would
+  emit also appears in R001, so the timeline is still complete for `deployed`
+  events; only the `correlated-change` augmentation is missing.
 
-To enable `resourcechanges` in your subscription:
+To enable `resourcechanges` in your subscription (this also unblocks R004):
 ```powershell
 az policy assignment create --policy "06a78e20-9358-41c9-923c-fb736d382a4d" \
   --name "enable-change-history" --scope "/subscriptions/<sub-id>"
 ```
+
+After enabling, allow up to ~30 minutes for ARG to start indexing changes, then re-run.
+
+## Troubleshooting first runs
+
+| Symptom in the rendered report | Likely cause | Action |
+|---|---|---|
+| `Deployments found: 0` and Change Timeline is empty (or only SKIPPED sentinels) | Incident window is outside of any actual deployment activity, or wrong subscription | Verify `incident_start_utc` / `incident_end_utc` in `runbooks/prod.values.yaml`; double-check `subscription_id` matches the affected sub |
+| `STATUS=SKIPPED REASON=resourcechanges-unavailable` | Change History not enabled on the subscription | Enable via the policy assignment in the ratification note above |
+| `Rules invalid: 1` (R004) alongside the SKIPPED sentinel above | Expected cascade — R004's join needs `resourcechanges` | Same fix as resourcechanges; otherwise accept (R001 still gives you all deployments) |
+| `STATUS=SKIPPED REASON=authorizationresources-unavailable` and you *expected* RBAC churn | Either no role assignments were actually created in the window, or your principal lacks read on `Microsoft.Authorization/roleAssignments` for the scope | Confirm with `az role assignment list --scope ...` for the same window; grant `Reader` on the scope if missing |
+| `ABORT: runbooks/prod.values.yaml missing` | First-time setup not done | Copy `prod.values.yaml.example` → `prod.values.yaml` and fill in real values |
+| Run ID changes between two runs you expected to match | Either the rule pack changed (different `ruleset_hash8`), or the UTC date rolled over between runs | Diff `rules/rules.yaml` against last commit; check that both runs occurred on the same UTC day |

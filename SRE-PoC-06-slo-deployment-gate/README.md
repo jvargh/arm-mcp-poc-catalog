@@ -7,7 +7,64 @@ threshold.
 
 Backed by the [Azure Resource Manager MCP Server](https://aka.ms/JoinARMMCP).
 
-## What it does
+## Purpose
+
+CI/CD systems happily ship the next change set to a service whose error budget is
+already burnt to zero, because the budget lives in a metric store the deploy
+pipeline never reads. The result is repeated deploys into an active brown-out and
+incident bridges that ask "why did we just push a new build into a degraded
+service?".
+
+This PoC is the **deterministic deployment gate** that closes that loop from
+inside Copilot Chat / Copilot CLI. Concretely:
+
+*   The ARM MCP server resolves a service to its observability resource (App
+    Insights component or Log Analytics workspace) by a single tag
+    (`slo_service`) — pinned in
+    [`rules.yaml`](.github/copilot/skills/slo-deployment-gate/rules/rules.yaml) R001.
+*   The gate decision is pure arithmetic against runbook-pinned thresholds
+    (`budget_pct > threshold → ALLOW`, `≤ threshold → BLOCK`). The model never
+    invents a verdict.
+*   Bypass is possible only with a valid `CR-XXXXXX` / `INC-XXXXXX` reference,
+    and every bypass appends one JSON line to `exports/bypass-audit.jsonl`.
+*   Two runs against the same service on the same UTC day produce the same
+    `run_id` (`SLO-{YYYYMMDD}-{scope}-{sha256(rules.yaml)[:8]}`) and the same
+    decision — empirically validated by the
+    [2026-05-13 live run](#lessons-from-the-2026-05-13-live-run).
+
+It is the SLO-pillar counterpart to
+[SRE-PoC-5 reliability scorecard](../SRE-PoC-05-Reliability-posture-scorecard/README.md)
+and the change-side companion to
+[SRE-PoC-2 change freeze](../SRE-PoC-02-change-freeze-enforcer/README.md): both
+the budget *and* the freeze window must clear before a deploy proceeds.
+
+### Intended end state
+
+Once installed and pointed at your subscription, an operator can:
+
+*   Type `@slo-deployment-gate gate scope prod service <your-service>` from VS
+    Code Chat (or `copilot -p "Gate deployment for service <your-service> in
+    scope prod"` from the CLI) before every production deploy and trust the
+    ALLOW / BLOCK answer because the underlying KQL is locked, the threshold is
+    runbook-pinned, and the verdict is computed by formula — not by the model.
+*   Type `@slo-deployment-gate deploy scope prod service <your-service> template
+    infra/main.json` to combine the gate with a what-if deploy notice in a
+    single turn. On ALLOW, an `exports/report-<run_id>.md` is emitted alongside
+    the gate result. **No real deployment is issued in v1** — the agent prints
+    the `create_template_deployment` call it *would* have made.
+*   Override a BLOCK only with `bypass CR-001234` or `bypass INC-001234`, and
+    have the override land as a one-line audit record in
+    `exports/bypass-audit.jsonl` for the postmortem trail.
+*   Drill into any decision via `exports/gate-<run_id>.md` (always written,
+    one-per-run) and see the exact KQL behind every rule — no model paraphrase,
+    no hidden filters.
+*   Accept that `STATUS=OUT_OF_SCOPE REASON=arg-cannot-read-metrics` is the
+    *expected* signal until you wire a live budget source (Azure Monitor query,
+    Prometheus scrape, or external SLO platform). ARG can locate the workspace
+    and read its tags, but it cannot read metric values; v1 reads the budget
+    from the runbook's `simulated_budget_pct` and is honest about it.
+
+## What it does on each run
 
 1. Loads a fixed rule pack (`skills/slo-deployment-gate/rules/rules.yaml`) — 3 SLO
    evaluation rules with **pre-canned ARG queries**.
@@ -120,6 +177,23 @@ Backed by the [Azure Resource Manager MCP Server](https://aka.ms/JoinARMMCP).
    az resource tag --ids /subscriptions/.../resourceGroups/.../providers/microsoft.insights/components/my-app-insights --tags slo_service=my-service
    ```
 
+> **Heads up about the example services.** `runbooks/prod.yaml` ships with three
+> illustrative entries (`payments-api`, `checkout-api`, `auth-service`) plus a
+> generic `sample-service` placeholder. These names are kept so the scenarios in
+> [exports/test-run.md](exports/test-run.md) line up, but they are NOT guaranteed
+> to exist (or be tagged) in your subscription. If you invoke the gate against a
+> service that has no tagged App Insights component, R001 returns zero rows and
+> the gate fail-closes to BLOCK. Either rename `sample-service` to a service you
+> have, or add a new entry and tag the matching component.
+
+## Sample template
+
+The README examples reference `infra/main.json`. A no-op ARM template is included
+at that path so the `template infra/main.json` argument resolves to a real file.
+It declares no resources (v1 of the gate never actually calls
+`create_template_deployment`). Replace it with your real workload template before
+wiring up live deploys.
+
 ## Run
 
 VS Code chat:
@@ -149,8 +223,53 @@ Bypass a BLOCK (requires CR or incident ref):
 GitHub Copilot CLI:
 
 ```
-gh copilot -p "Gate deployment for service payments-api in scope prod"
+copilot -p "Gate deployment for service payments-api in scope prod"
 ```
+
+> **CLI users:** see [Copilot CLI usage notes](../README.md#copilot-cli-usage-notes) — `gh copilot` has a quoting bug on Windows when `copilot` lives on a path with spaces, `@agent` mentions don't work in the CLI, and first runs take a few minutes.
+
+## Interpreting results
+
+Every run writes exactly one file to `exports/`:
+
+| Mode | Decision | File written |
+|---|---|---|
+| `gate` | ALLOW or BLOCK | `exports/gate-<run_id>.md` |
+| `deploy` | BLOCK | `exports/gate-<run_id>.md` (no report) |
+| `deploy` | ALLOW or ALLOW (BYPASS) | `exports/gate-<run_id>.md` AND `exports/report-<run_id>.md` |
+| `status` | (lookup) | nothing new; reprints the most recent gate file |
+
+A `report-<run_id>.md` is produced ONLY on `deploy` mode + `ALLOW`. If your run
+came back BLOCK, expect just the `gate-*.md` file. If you don't see any new
+file at all, refresh the Explorer view (right-click `exports/` -> Refresh) or
+run `Get-ChildItem exports` to confirm.
+
+### Why a run BLOCKs with `WORKSPACE=null`
+
+If R001 finds zero App Insights / Log Analytics workspaces tagged
+`slo_service: <service>` in your subscription, the gate fail-closes per
+SKILL.md Step 3.1:
+
+```
+**Decision:** BLOCK (fail-closed: no workspace tagged `slo_service: <service>` ...)
+```
+
+This is correct behaviour, not a bug. The fix is one of:
+
+1. Tag a real App Insights component:
+   ```powershell
+   az resource tag --ids <component-id> --tags slo_service=<your-service>
+   ```
+   then re-run with `service <your-service>`.
+2. Rename the `sample-service` entry in `runbooks/prod.yaml` to a service that
+   already has the `slo_service` tag in your subscription.
+3. For a smoke test of the rendered output (no real workspace), use the
+   pre-canned scenarios documented in [exports/test-run.md](exports/test-run.md).
+
+> See [Lessons from the 2026-05-13 live run](#lessons-from-the-2026-05-13-live-run)
+> for the operator-facing takeaways from this PoC's first end-to-end run
+> (R001 NO_MATCH steady state, R002 OUT_OF_SCOPE expected behaviour, R003
+> SKIP path on subscriptions where `resourceHealthResources` is unavailable).
 
 ## Layout
 
@@ -176,10 +295,108 @@ SRE-PoC-06-slo-deployment-gate/
     prod.yaml                                 # committed template (placeholders + SLO targets)
     prod.values.yaml                          # GITIGNORED — your real sub IDs / RG names
     prod.values.yaml.example                  # committed schema reference
+  infra/
+    main.json                                 # sample ARM template referenced by README examples (no-op)
   exports/
     .gitkeep                                  # gate results + bypass audit land here
     test-run.md                               # simulated test outcomes
 ```
+
+## Lessons from the 2026-05-13 live run
+
+The first end-to-end live run against subscription `463a82d4-…aa93` ran the
+full deterministic flow (3 rules, 1 gate decision, 1 artifact written) and
+surfaced the operator-facing takeaways below. The verbatim rendered gate
+result is preserved in [Live validation log](#live-validation-log).
+
+1. **The pipeline is deterministic and the artifact contract holds.**
+   Run ID resolved to `SLO-20260513-prod-3dad3464` — `prod` from the
+   invocation, `3dad3464` from `sha256(rules.yaml)[:8]`. Exactly one file
+   landed in `exports/` (`gate-SLO-20260513-prod-3dad3464.md`), header
+   format matched the template, decision line was the literal
+   `**Decision:** BLOCK ...`, and budget rendered with the pinned 1-decimal
+   precision. No real `create_template_deployment` call was issued.
+2. **R001 NO_MATCH is the dominant first-time outcome and is correct.**
+   Zero resources were tagged `slo_service: payments-api` in the target
+   subscription, so R001 returned an empty result set and the gate
+   fail-closed to BLOCK per SKILL.md Step 3.1. This is **not a bug** — it
+   is the only safe behaviour when the gate cannot identify the workspace
+   for a service. Before invoking the gate against a real service, tag the
+   App Insights component once: `az resource tag --ids <component-id>
+   --tags slo_service=<service>`. Until that tag exists, every run for
+   that service will (correctly) BLOCK at R001 with `WORKSPACE=null`.
+3. **R002 OUT_OF_SCOPE is the steady-state v1 signal, not a failure.**
+   With no `slo_budget_pct` tag on the workspace, R002 returned zero
+   property rows and the gate emitted the documented
+   `STATUS=OUT_OF_SCOPE REASON=arg-cannot-read-metrics` line. This is the
+   honest representation of the ARG capability gap (Known Limitation #1):
+   in v1 the budget value falls back to the runbook's
+   `simulated_budget_pct`. Production wiring needs a live budget source
+   (Azure Monitor query, Prometheus scrape, or external SLO platform) —
+   that integration is intentionally out of scope for an ARM-MCP-only PoC.
+4. **R003 SKIP path was exercised and behaved as designed.** This
+   subscription does not have `resourceHealthResources` enabled, so R003
+   returned an unavailable-table response. With `skip_if_unavailable:
+   true` the rule emitted `STATUS=SKIPPED REASON=resourcechanges-unavailable`
+   and the gate continued without R003's signal — non-blocking, as
+   intended. Operators on subscriptions with ResourceHealth enabled will
+   see R003 PASS or BLOCK on active incidents (`block_on_active_incident:
+   true` in `runbooks/prod.yaml`); operators on subs without it should
+   expect this SKIP line on every run and treat it as steady-state.
+
+The run also confirmed that `Resources` (R001/R002 base table) is queryable
+on this subscription and the `slo_service` tag projection round-trips
+through ARM MCP unchanged, so the only adoption work between this PoC and a
+useful production gate is (a) tag the App Insights components and (b) wire
+a real budget source to replace `simulated_budget_pct`.
+
+## Live validation log
+
+First live run, 2026-05-13. Subscription `463a82d4-…aa93`. Service
+`payments-api`. Three illustrative `slo_targets` entries from
+`runbooks/prod.yaml` were left in place; none had a tagged App Insights
+component in this subscription, so R001 NO_MATCH and the documented
+fail-closed BLOCK is the verbatim output below:
+
+```markdown
+# SLO Deployment Gate Result
+
+**Run ID:** SLO-20260513-prod-3dad3464
+**Scope:** prod
+**Service:** payments-api
+**Generated (UTC):** 2026-05-13T15:00:23Z
+**Ruleset hash:** 3dad3464
+
+## SLO Budget Evaluation
+
+| Field | Value |
+|---|---|
+| Service | payments-api |
+| SLO Error Budget | 72.4% |
+| Budget Threshold | 50.0% |
+| Window | 30 days |
+| Budget Source | runbook `slo_targets` (v1 simulated) |
+| Workspace Resource ID | null |
+
+> ℹ️ `STATUS=OUT_OF_SCOPE REASON=arg-cannot-read-metrics WORKSPACE=null`
+> ARG located the App Insights workspace but cannot read live metric values.
+> Investigate the workspace directly for live SLO data.
+
+## Rule Evaluation
+
+| Rule ID | Title | Status | Result |
+|---|---|---|---|
+| R001 | Resolve service to App Insights component by tag | NO_MATCH | 0 resources tagged `slo_service: payments-api` in subscription sub-id |
+| R002 | Check error budget status via workspace metadata (properties) | OUT_OF_SCOPE | 0 rows; `slo_budget_pct` tag not present — `REASON=arg-cannot-read-metrics` |
+| R003 | Validate no active incidents on target service (resource health) | SKIPPED | `REASON=resourcechanges-unavailable` — `resourceHealthResources` table not enabled |
+
+## Decision
+
+**Decision:** BLOCK (fail-closed: no workspace tagged `slo_service: payments-api` — cannot evaluate SLO budget)
+```
+
+The full archived artifact lives at
+[`exports/gate-SLO-20260513-prod-3dad3464.md`](exports/gate-SLO-20260513-prod-3dad3464.md).
 
 ## Acceptance criteria mapping
 
