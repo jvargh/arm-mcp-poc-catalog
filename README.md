@@ -1,5 +1,9 @@
 # ARM MCP - PoC Catalog
 
+> **Featured on Microsoft Tech Community:** [ARM MCP Server: A Catalog of 24 PoCs](https://techcommunity.microsoft.com/blog/azuregovernanceandmanagementblog/arm-mcp-server-a-catalog-of-24-pocs/4519069)
+>
+> Read the blog for an introduction to the catalog, its use cases, and how these PoCs demonstrate AI-assisted Azure governance and management.
+
 A catalog of **25 proof-of-concept Copilot agents** built on the [Azure Resource Manager MCP Server](https://techcommunity.microsoft.com/blog/azuregovernanceandmanagementblog/introducing-the-azure-resource-manager-mcp-server/4517521) (public preview, May 2026). Each PoC is a self-contained VS Code workspace with its own agent persona, deterministic skill, pre-canned ARG queries, frozen output templates, and ARM template stubs where applicable.
 
 ## What is the ARM MCP Server?
